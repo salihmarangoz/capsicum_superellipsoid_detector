@@ -3,11 +3,11 @@
 import rospy
 from pointcloud_roi_msgs.msg import PointcloudWithRoi
 import sensor_msgs.point_cloud2 as pc2
-from sensor_msgs.msg import PointCloud, ChannelFloat32
+from sensor_msgs.msg import PointCloud, PointCloud2, ChannelFloat32
 from geometry_msgs.msg import Point32
 
 import numpy as np
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, MeanShift
 from scipy.spatial.transform import Rotation as R
 from scipy.optimize import least_squares
 
@@ -88,39 +88,22 @@ def loss(x0,x,y,z):
 
 def callback(data):
 
-
-    # check roi indices
-    assert data.cloud.height == 1 or data.cloud.width == 0 # TODO: quick fix
-    roi_indices = np.array(data.roi_indices)
-    print("roi_indices.shape:", roi_indices.shape)
-    if roi_indices.shape[0] > 500 or roi_indices.shape[0] == 0: # TODO: quick fix
-        return
-
-
-
-    # parse points
-    # ===== FAST WAY =====
-    uvs = np.stack((roi_indices, np.zeros(roi_indices.shape, dtype=np.int))).T.tolist()
-    gen = pc2.read_points(data.cloud, skip_nans=True, field_names=("x", "y", "z"), uvs=uvs)
+    gen = pc2.read_points(data, skip_nans=True, field_names=("x", "y", "z"))
     gen_points = np.array(list(gen)).T
-    # ===== SLOW WAY =====
-    #gen = pc2.read_points(data.cloud, skip_nans=True, field_names=("x", "y", "z"))
-    #gen_points = np.array(list(gen))[roi_indices,:].T
-    # ====================
-    print("gen_points.shape:", gen_points.shape) # (3, N)
-
 
 
     # cluster data points
-    db = DBSCAN(eps=0.04, min_samples=15).fit(gen_points.T)
+    db = DBSCAN(eps=0.02, min_samples=50).fit(gen_points.T)
     print(db.labels_)
     
     clusters = []
     for cluster_id in range(-1, max(db.labels_)+1):
         mask = db.labels_ == cluster_id
         clusters.append(gen_points[:,mask])
-    clusters = clusters
 
+        # todo
+        if cluster_id == 0:
+            break
 
 
     # publish debug point cloud
@@ -128,7 +111,7 @@ def callback(data):
     ch1 = ChannelFloat32()
     ch1.name = "cluster_id"
     debug_pointcloud.channels.append(ch1)
-    debug_pointcloud.header = data.cloud.header
+    debug_pointcloud.header = data.header
     for cluster_id, cluster in enumerate(clusters):
         for x,y,z in cluster.T:
             debug_pointcloud.points.append(Point32(x, y, z))
@@ -136,10 +119,9 @@ def callback(data):
     pointcloud_publisher.publish(debug_pointcloud)
 
 
-
     # publish debug point cloud (2)
     debug_pointcloud = PointCloud()
-    debug_pointcloud.header = data.cloud.header
+    debug_pointcloud.header = data.header
     for cluster_id, cluster in enumerate(clusters):
         if cluster_id < 0:
             continue
@@ -182,7 +164,7 @@ def listener():
     rospy.init_node('listener', anonymous=True)
     pointcloud_publisher = rospy.Publisher("/my_pointcloud_topic", PointCloud)
     pointcloud_publisher2 = rospy.Publisher("/my_pointcloud_topic2", PointCloud)
-    rospy.Subscriber("/detect_roi/results", PointcloudWithRoi, callback, queue_size=2)
+    rospy.Subscriber("/capsicum_superellipsoid_detector/pc_roi_out", PointCloud2, callback, queue_size=2)
     rospy.spin()
 
 if __name__ == '__main__':
