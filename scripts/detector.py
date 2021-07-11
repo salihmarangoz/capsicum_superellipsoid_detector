@@ -133,10 +133,13 @@ def callback(data):
         w_std = np.mean((x_std, y_std, z_std))
         x_, y_, z_ = x_ / w_std, y_ / w_std, z_ / w_std
 
-        x0 = (1,1,1,0.7,0.7,0,0,0,0,0,0)
+        x0 = (0.1,0.1,0.1,0.7,0.7,0,0,0,0,0,0)
         result = least_squares(loss, x0, args=(x_.flatten(), y_.flatten(), z_.flatten()), method="lm")
-        #print(result)
+        #result = least_squares(loss, x0, args=(x_.flatten(), y_.flatten(), z_.flatten()))
         A,B,C,E1,E2,tx,ty,tz,yaw,pitch,roll = result["x"]
+
+        #A,B,C,E1,E2,tx,ty,tz,yaw,pitch,roll = x0
+
         print("A:{},B:{},C:{},E1:{},E2:{},tx:{},ty:{},tz:{},yaw:{},pitch:{},roll:{}".format(A,B,C,E1,E2,tx,ty,tz,yaw,pitch,roll))
 
         if A < 0.1 or B < 0.1 or C < 0.1:
