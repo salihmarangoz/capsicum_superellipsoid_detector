@@ -2,6 +2,7 @@
 //#include <message_filters/subscriber.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
+#include <visualization_msgs/Marker.h>
 #include <pcl/filters/conditional_removal.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -14,7 +15,7 @@
 
 
 // globals
-ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub;
+ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub;
 std::unique_ptr<tf::TransformListener> listener;
 
 
@@ -126,7 +127,7 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
     sensor_msgs::PointCloud2::Ptr roi_pc2_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*roi_pc, *roi_pc2_ros);
     roi_pc2_ros->header = pc_pcl_tf_ros_header;
-    ROS_INFO("%d", roi_pc->points.size());
+    //ROS_INFO("%d", roi_pc->points.size());
     pc_roi_pub.publish(roi_pc2_ros);
   }
   if (pc_other_pub.getNumSubscribers() > 0 )
@@ -134,7 +135,7 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
     sensor_msgs::PointCloud2::Ptr other_pc2_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*other_pc, *other_pc2_ros);
     other_pc2_ros->header = pc_pcl_tf_ros_header;
-    ROS_INFO("%d", other_pc->points.size());
+    //ROS_INFO("%d", other_pc->points.size());
     pc_other_pub.publish(other_pc2_ros);
   }
 
@@ -151,22 +152,112 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
   ec.setInputCloud (roi_pc);
   ec.extract (cluster_indices);
 
-  pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = getColoredCloud (roi_pc, cluster_indices);
-
   if (clusters_pub.getNumSubscribers() > 0 )
   {
+    pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = getColoredCloud (roi_pc, cluster_indices);
+
     sensor_msgs::PointCloud2::Ptr debug_pc(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*colored_cloud, *debug_pc);
     debug_pc->header = pc_pcl_tf_ros_header;
-    ROS_INFO("%d", colored_cloud->points.size());
+    //ROS_INFO("%d", colored_cloud->points.size());
     clusters_pub.publish(debug_pc);
   }
 
 
-  // Extract surface normals
+  // Predict roi centers
+  pcl::PointCloud<pcl::PointXYZ>::Ptr roi_centers (new pcl::PointCloud<pcl::PointXYZ>);
+  for (const auto& i_segment : cluster_indices)
+  {
+    // Gather points for a segment
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_tmp_ (new pcl::PointCloud<pcl::PointXYZRGB>);
+    for (const auto& i_point : (i_segment.indices))
+    {
+      pc_tmp_->push_back((*roi_pc)[i_point]);
+    }
+
+    // Estimate Normals
+    pcl::PointCloud<pcl::Normal>::Ptr pc_tmp_normals_ (new pcl::PointCloud<pcl::Normal>);
+    pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
+    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB> ());
+    ne.setSearchMethod(tree);
+    ne.setInputCloud(pc_tmp_);
+    ne.setRadiusSearch (0.03); // Use all neighbors in a sphere of radius 3cm
+    ne.compute (*pc_tmp_normals_);
+
+    /* Note: pc_tmp_normals_ vectors are normalized!
+    for (const auto& p_ : *pc_tmp_normals_)
+    {
+      float vx = p_._Normal::normal[0];
+      float vy = p_._Normal::normal[1];
+      float vz = p_._Normal::normal[2];
+      ROS_INFO_STREAM(sqrt(vx*vx + vy*vy + vz*vz));
+    }*/
+
+    Eigen::MatrixXf R_mat(3,3);
+    R_mat.setZero();
+    Eigen::MatrixXf Q_mat(3,1);
+    Q_mat.setZero();
+    auto eye3 = Eigen::MatrixXf::Identity(3, 3);
+
+    for (size_t i=0; i<pc_tmp_normals_->size(); i++)
+    {
+      auto normal_ = pc_tmp_normals_->at(i);
+      auto point_ = pc_tmp_->at(i);
+      //ROS_INFO_STREAM("-----");
+
+      //auto v = Eigen::MatrixXf::Map(normal_._Normal::normal, 1, 3);
+      Eigen::MatrixXf v(3,1);
+      v << normal_.getNormalVector3fMap().x(), normal_.getNormalVector3fMap().y(), normal_.getNormalVector3fMap().z();
+      //ROS_INFO_STREAM(v);
+
+      //auto a = Eigen::MatrixXf::Map(point_.getVector3fMap().data(), 3, 1);
+      Eigen::MatrixXf a(3,1);
+      a << point_.getVector3fMap().x(), point_.getVector3fMap().y(), point_.getVector3fMap().z();
+      //ROS_INFO_STREAM(a);
+
+      R_mat += (eye3 - v * v.transpose());
+      //ROS_INFO_STREAM(std::endl << eye3 - v * v.transpose());
+      Q_mat += ((eye3 - (v * v.transpose() ) ) * a);
+      //ROS_INFO_STREAM(std::endl << a);
+      //ROS_INFO_STREAM(std::endl << (eye3 - v * v.transpose()) * a);
+
+    }
+
+    //ROS_INFO_STREAM("R_mat:" << std::endl << R_mat << std::endl << "Q_mat:" << std::endl << Q_mat);
+    //ROS_INFO_STREAM(R_mat.rows() << " " << R_mat.cols() << " " << Q_mat.rows() << " " << Q_mat.cols());
+
+    //auto cp_ = R_mat.completeOrthogonalDecomposition().solve(Q_mat.transpose());
+
+    auto R_dec = R_mat.completeOrthogonalDecomposition();
+    //auto cp_ = R_dec.solve(Q_mat);
+    auto R_inv = R_dec.pseudoInverse();
+    auto cp_ = (R_inv * Q_mat).transpose();
+
+    //ROS_INFO_STREAM("cp: " << cp_);
+    //ROS_INFO_STREAM("cp: " << cp_(0,0) << " " << cp_(0,1) << " " << cp_(0,2));
+    auto cp_pcl = pcl::PointXYZ(cp_(0,0), cp_(0,1), cp_(0,2));
+    roi_centers->push_back(cp_pcl);
 
 
-  // Predict roi centroids (with least squares line intersection
+  }
+/*
+  Eigen::Matrix3f A;
+  Eigen::Vector3f b;
+  A << 1,2,3,  4,5,6,  7,8,10;
+  b << 3, 3, 4;
+  Eigen::Vector3f x = A.colPivHouseholderQr().solve(b);
+  ROS_INFO_STREAM(x);
+*/
+
+  sensor_msgs::PointCloud2::Ptr roi_centers_ros(new sensor_msgs::PointCloud2);
+  pcl::toROSMsg(*roi_centers, *roi_centers_ros);
+  roi_centers_ros->header = pc_pcl_tf_ros_header;
+  centers_pub.publish(roi_centers_ros);
+
+
+  // Fit superellipsoid using roi_centers
+
+
 
 }
 
@@ -181,6 +272,8 @@ int main(int argc, char **argv)
   pc_roi_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("pc_roi_out", 2);
   pc_other_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("pc_other_out", 2);
   clusters_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("clusters_out", 2);
+  centers_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("centers_out", 2);
+  vis_pub = priv_nh.advertise<visualization_msgs::Marker>( "visualization_marker", 2);
 
   ros::Subscriber pc_sub = nh.subscribe("pc_in", 1, pc_callback);
 
