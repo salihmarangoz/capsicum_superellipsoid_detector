@@ -4,6 +4,25 @@
 
 
 
+## Compile & Run
+
+```bash
+# todo: ceres-solver dependency
+
+$ cd catkin_ws/
+$ rosdep install --from-paths src --ignore-src -r
+$ catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+$ source catkin_ws/devel/setup.bash
+$ roslaunch capsicum_superellipsoid_detector start.launch
+```
+
+
+
+
+
+
+
 ## Meetings
 
 ### 15-July-2021
@@ -24,9 +43,9 @@ See:
 
 Screenshots:
 
-![](imgs/2_mass_center_predictor/Screenshot from 2021-07-15 05-41-21.png)
+![](imgs/2_mass_center_predictor/1.png)
 
-![](imgs/2_mass_center_predictor/Screenshot from 2021-07-15 05-41-42.png)
+![](imgs/2_mass_center_predictor/2.png)
 
 
 
