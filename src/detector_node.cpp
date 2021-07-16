@@ -13,6 +13,68 @@
 #include <pcl/segmentation/region_growing.h>
 #include <pcl/segmentation/extract_clusters.h>
 
+#include "ceres/ceres.h"
+using ceres::AutoDiffCostFunction;
+using ceres::CostFunction;
+using ceres::Problem;
+using ceres::Solve;
+using ceres::Solver;
+
+/*
+def loss(x0,x,y,z):
+    a,b,c,e1,e2,tx,ty,tz,yaw,pitch,roll = x0
+
+    # https://otik.uk.zcu.cz/bitstream/11025/1637/1/D71.pdf
+    x,y,z = rotate_xyz(x,y,z,roll,pitch,yaw)
+    x,y,z = translate_xyz(x,y,z,tx,ty,tz)
+
+    #x,y,z = x+0j, y+0j, z+0j
+    x,y,z = np.abs(x), np.abs(y), np.abs(z)
+
+    f = ( (x/a)**(2/e2) + (y/b)**(2/e2) )**(e2/e1) + (z/c)**(2/e1)
+    #f = (np.sqrt(a*b*c) * (f**e1 - 1.))**2
+    f = np.abs(a*b*c) * (f**e1 - 1.)**2
+
+    # additions: (MAYBE? OR ADD THESE AS A CONSTRAINT)
+    #f += 0.001*np.abs(tx + ty + tz)
+    #f += 0.001*np.abs(roll+pitch+yaw)
+    #f += 0.001*(a-1)
+    #f += 0.001*(b-1)
+    #f += 0.001*(c-1)
+
+    #f = np.sum(f)
+    #f = np.linalg.norm(f)
+    #print(f)
+    return f
+*/
+/*
+struct SuperellipsoidCostFunctor {
+  SuperellipsoidCostFunctor(const double x, const double y, const double z) : x_(x), y_(y), z_(z) {}
+
+  template <typename T>
+  bool operator()(const T* parameters, T* residuals) const {
+    const T a = parameters[0];
+    const T b = parameters[1];
+    const T c = parameters[2];
+    const T e1 = parameters[3];
+    const T e2 = parameters[4];
+    const T tx = parameters[5];
+    const T ty = parameters[6];
+    const T tz = parameters[7];
+    const T yaw = parameters[8];
+    const T pitch = parameters[9];
+    const T roll = parameters[10];
+
+    residuals[0] = b1 * pow(1.0 + exp(b2 -  b3 * x_), -1.0 / b4) - y_;
+    return true;
+  }
+
+  private:
+    const double x_;
+    const double y_;
+    const double z_;
+};
+*/
 
 // globals
 ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub;
@@ -175,6 +237,7 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
       pc_tmp_->push_back((*roi_pc)[i_point]);
     }
 
+    // TODO: Randomly sample some points or apply clustering then estimate normals
     // Estimate Normals
     pcl::PointCloud<pcl::Normal>::Ptr pc_tmp_normals_ (new pcl::PointCloud<pcl::Normal>);
     pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
@@ -256,6 +319,29 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
 
 
   // Fit superellipsoid using roi_centers
+
+/*
+  CostFunction* cost_function =
+        new AutoDiffCostFunction<Rat43CostFunctor, 1, 4>(
+          new Rat43CostFunctor(x, y));
+
+
+    double x = 0.5;
+    const double initial_x = x;
+    // Build the problem.
+    Problem problem;
+    // Set up the only cost function (also known as residual). This uses
+    // auto-differentiation to obtain the derivative (jacobian).
+    CostFunction* cost_function =
+        new AutoDiffCostFunction<CostFunctor, 1, 1>(new CostFunctor);
+    problem.AddResidualBlock(cost_function, nullptr, &x);
+    // Run the solver!
+    Solver::Options options;
+    options.minimizer_progress_to_stdout = true;
+    Solver::Summary summary;
+    Solve(options, &problem, &summary);
+    ROS_INFO_STREAM(summary.BriefReport());
+*/
 
 
 
