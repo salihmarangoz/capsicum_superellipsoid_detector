@@ -81,7 +81,8 @@ ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub;
 std::unique_ptr<tf::TransformListener> listener;
 
 
-std::tuple<pcl::PointCloud<pcl::PointXYZRGB>::Ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr> seperate_roi(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl)
+std::tuple<pcl::PointCloud<pcl::PointXYZRGB>::Ptr, pcl::PointCloud<pcl::PointXYZRGB>::Ptr>
+seperate_roi(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl)
 {
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr other_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -105,7 +106,8 @@ std::tuple<pcl::PointCloud<pcl::PointXYZRGB>::Ptr, pcl::PointCloud<pcl::PointXYZ
 
 
 // copied & modified: https://pointclouds.org/documentation/region__growing_8hpp_source.html
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColoredCloud (pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_, std::vector<pcl::PointIndices> &clusters_)
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr
+getColoredCloud (pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_, std::vector<pcl::PointIndices> &clusters_)
 {
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud;
 
@@ -154,7 +156,8 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColoredCloud (pcl::PointCloud<pcl::Poi
 }
 
 
-void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
+void
+pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
 {
   ROS_INFO_ONCE("Pointcloud received...");
 
@@ -261,6 +264,8 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
     Eigen::MatrixXf Q_mat(3,1);
     Q_mat.setZero();
     auto eye3 = Eigen::MatrixXf::Identity(3, 3);
+    Eigen::MatrixXf cluster_mean(3,1);
+    cluster_mean.setZero();
 
     for (size_t i=0; i<pc_tmp_normals_->size(); i++)
     {
@@ -279,12 +284,17 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
       //ROS_INFO_STREAM(a);
 
       R_mat += (eye3 - v * v.transpose());
-      //ROS_INFO_STREAM(std::endl << eye3 - v * v.transpose());
       Q_mat += ((eye3 - (v * v.transpose() ) ) * a);
-      //ROS_INFO_STREAM(std::endl << a);
-      //ROS_INFO_STREAM(std::endl << (eye3 - v * v.transpose()) * a);
 
+      cluster_mean += a;
     }
+
+    cluster_mean = cluster_mean / pc_tmp_normals_->size();
+
+    // experimental regularization
+    float regularization = 2.5;
+    R_mat += regularization * eye3;
+    Q_mat += + regularization * cluster_mean;
 
     //ROS_INFO_STREAM("R_mat:" << std::endl << R_mat << std::endl << "Q_mat:" << std::endl << Q_mat);
     //ROS_INFO_STREAM(R_mat.rows() << " " << R_mat.cols() << " " << Q_mat.rows() << " " << Q_mat.cols());
@@ -348,7 +358,8 @@ void pc_callback(const sensor_msgs::PointCloud2ConstPtr& pc_ros)
 }
 
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
   ros::init(argc, argv, "capsicum_superellipsoid_detector_node");
   ros::NodeHandle nh;

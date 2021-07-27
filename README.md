@@ -25,6 +25,26 @@ $ roslaunch capsicum_superellipsoid_detector start.launch
 
 ## Meetings
 
+### 29-July 2021
+
+- Improved mass center prediction using with `bias towards a reference point regularization`. Means of clusters is used for reference points. See the images below for example results. (Note: TopDownOrtho is used in RViz)
+
+**No regularization:** (Better predictions are drawn on the image)
+
+![](imgs/3_regularization_a.png)
+
+**Bias towards a reference point regularization: ($\lambda = 2.5$**)
+
+![](imgs/3_regularization_b.png)
+
+
+
+### 22-July 2021
+
+(skipped)
+
+
+
 ### 15-July-2021
 
 - Surface normal extraction and predicting mass center using Least Squares Intersectıon of Lines is working, results look promising.
