@@ -2,28 +2,71 @@
 
 [toc]
 
+## Dependencies
+
+```bash
+$ cd $HOME
+$ git clone https://github.com/PointCloudLibrary/pcl.git -b pcl-1.10.0
+$ cd pcl; mkdir build; cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make -j8
+$ sudo make install  # "sudo make uninstall" is also possible. Don't delete the folder
+
+$ cd catkin_ws/src
+$ git clone https://github.com/ceres-solver/ceres-solver.git
+$ git clone https://github.com/ros-perception/perception_pcl.git -b melodic-devel
+
+$ rosdep install --from-paths src --ignore-src -r # for other dependencis
+```
+
 
 
 ## Compile & Run
 
+- Ceres-solver build time can be improved via modifying `CMakeLists.txt`. Set these values `OFF`
+  - `option(BUILD_TESTING "Enable tests" ON)`
+  - `option(BUILD_EXAMPLES "Build examples" ON)`
+  - `option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)`
+
 ```bash
-# todo: ceres-solver dependency
-
 $ cd catkin_ws/
-$ rosdep install --from-paths src --ignore-src -r
 $ catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
-
 $ source catkin_ws/devel/setup.bash
 $ roslaunch capsicum_superellipsoid_detector start.launch
 ```
 
 
 
+## Debugging
+
+
+There are two lines in `CMakeLists.txt` which enable AddressSanitizer and add debug symbols. For detecting heap corruptions, stack overflow, etc this method would be better. Also, AddressSanitizer slows the application by 2x, while the performance impact is 10x with GDB.
+
+```makefile
+ADD_COMPILE_OPTIONS(-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer -g)
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-recover=address -g")
+```
+
+- If you can't see the line number in the AddressSanitizer output, some dependencies should be installed:
+
+```bash
+$ sudo apt install clang llvm  # note: clang may not be revelant
+```
+
 
 
 
 
 ## Meetings
+
+### 26-Aug 2021
+
+- Heap corruption problem is solved with compiling PCL and Ceres-Solver. https://github.com/PointCloudLibrary/pcl/issues/4904 helped me to find that the root of the problem is alignment for Eigen data. **Solution added as the Dependencies section to the README.md**
+
+- Fixed ceres-solver can't found while compiling in an empty workspace.
+- Added debugging notes. Now debugging with AddressSanitizer can be enabled/disabled commenting one line in `CMakeLists.txt`
+
+
 
 ### 29-July 2021
 

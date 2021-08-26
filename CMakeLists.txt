@@ -4,6 +4,20 @@ project(capsicum_superellipsoid_detector)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
 
+
+set(ENABLE_ADDRESS_SANITIZER true)
+if(DEFINED ENABLE_ADDRESS_SANITIZER)
+  MESSAGE("===========================================================")
+  MESSAGE("===========================================================")
+  MESSAGE("ADDRESS SANITIZER IS ENABLED FOR ${CMAKE_PROJECT_NAME}")
+  MESSAGE("============ THIS MAY LOWER THE PERFORMANCE ===============")
+  MESSAGE("===========================================================")
+  MESSAGE("===========================================================")
+  ADD_COMPILE_OPTIONS(-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer -g)
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-recover=address -g")
+endif(DEFINED ENABLE_ADDRESS_SANITIZER)
+
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -26,6 +40,9 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL REQUIRED)
 find_package(Ceres REQUIRED)
+
+
+add_definitions(${PCL_DEFINITIONS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -129,6 +146,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -159,7 +177,7 @@ add_dependencies(detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 ## Specify libraries to link a library or executable target against
 target_link_libraries(detector_node
   ${catkin_LIBRARIES}
-  Ceres::ceres
+  ${CERES_LIBRARIES}
 )
 
 #############

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find capsicum_superellipsoid_detector)/launch/rviz.rviz"/>
+
+  <node pkg="capsicum_superellipsoid_detector" type="detector_node" name="capsicum_superellipsoid_detector" output="screen"> <!-- launch-prefix="valgrind" -->
+    <env name="ASAN_OPTIONS" value="symbolize=1"/>
+    <env name="ASAN_SYMBOLIZER_PATH" value="/usr/bin/llvm-symbolizer"/>
+    <remap from="pc_in" to="/camera/depth/points"/>
+  </node>
+
+</launch>

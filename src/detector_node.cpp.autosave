@@ -14,7 +14,6 @@
 #include <pcl/segmentation/extract_clusters.h>
 
 #include "ceres/ceres.h"
-#include <ceres/ceres.h>
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
 using ceres::Problem;
