@@ -61,10 +61,29 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 ### 26-Aug 2021
 
-- Heap corruption problem is solved with compiling PCL and Ceres-Solver. https://github.com/PointCloudLibrary/pcl/issues/4904 helped me to find that the root of the problem is alignment for Eigen data. **Solution added as the Dependencies section to the README.md**
-
+- Heap corruption problem is solved with compiling PCL and Ceres-Solver. https://github.com/PointCloudLibrary/pcl/issues/4904 helped me to find that the root of the problem is the alignment of Eigen variables. **Solution added as the Dependencies section to the README.md**
 - Fixed ceres-solver can't found while compiling in an empty workspace.
 - Added debugging notes. Now debugging with AddressSanitizer can be enabled/disabled commenting one line in `CMakeLists.txt`
+
+
+
+### 19-Aug-2021
+
+- Tried AddressSanitizer indicating heap-buffer-overflow. Only outputting the variable where the problem occurred, but not accurate. Will try to narrow the problem space. 
+- No progress on the project!
+
+
+
+### 12-Aug-2021
+
+- Improved ceres-solver and implemented quite a bit but there is an important heap corruption problem blockling the progress of the project.
+- Tried Valgrind and GDB but no luck.
+
+
+
+### 05-Aug-2021
+
+- The Initial part for the solver using Ceres-solver impemented. 
 
 
 
@@ -122,7 +141,7 @@ Screenshots:
 
 
 
-### 8-July-2021
+### 08-July-2021
 
 (may not be complete because this documentation is started on 15 July)
 

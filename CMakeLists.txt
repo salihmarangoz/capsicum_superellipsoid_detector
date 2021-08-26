@@ -5,7 +5,7 @@ project(capsicum_superellipsoid_detector)
 add_compile_options(-std=c++14)
 
 
-set(ENABLE_ADDRESS_SANITIZER true)
+#set(ENABLE_ADDRESS_SANITIZER true)
 if(DEFINED ENABLE_ADDRESS_SANITIZER)
   MESSAGE("===========================================================")
   MESSAGE("===========================================================")
