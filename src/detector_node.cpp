@@ -89,10 +89,13 @@ struct SuperellipsoidError {
 
 
 
-double[128] fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::PointXYZ center_prior, pcl::PointCloud<pcl::PointXYZ>::Ptr pc_visualization_output)
+boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::PointXYZ center_prior)
 {
   // Fit superellipsoid using roi_centers
-  double parameters[128];
+  auto parameters_ptr = boost::make_shared<std::vector<double>>();
+  parameters_ptr->resize(128);
+  auto parameters = (*parameters_ptr).data();
+
   parameters[0] = 0.05; // a
   parameters[1] = 0.05; // b
   parameters[2] = 0.05; // c
@@ -120,10 +123,13 @@ double[128] fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::Po
   if (!summary.IsSolutionUsable()) // report if the solution is not usable
     std::cout << summary.BriefReport() << "\n";
 
+  return parameters_ptr;
+}
 
-  // // https://en.wikipedia.org/wiki/Superellipsoid
-  if (superellipsoid_pub.getNumSubscribers() > 0)
-  {
+
+void samplePointsSuperellipsoid(std::vector<double> parameters, pcl::PointCloud<pcl::PointXYZ>::Ptr pc_visualization_output)
+{
+    // https://en.wikipedia.org/wiki/Superellipsoid
     double a_ = parameters[0];
     double b_ = parameters[1];
     double c_ = parameters[2];
@@ -133,9 +139,9 @@ double[128] fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::Po
     double ty_ = parameters[6];
     double tz_ = parameters[7];
 
-    for (double uu=-M_PI/2; uu<M_PI/2; uu+=0.1)
+    for (double uu=-M_PI/2; uu<M_PI/2; uu+=0.05)
     {
-      for (double vv=-M_PI; vv<M_PI; vv+=0.2)
+      for (double vv=-M_PI; vv<M_PI; vv+=0.05)
       {
         double r = 2/e2_;
         double t = 2/e1_;
@@ -155,13 +161,6 @@ double[128] fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::Po
         pc_visualization_output->push_back(point);
       }
     }
-  }
-}
-
-
-void samplePointsSuperellipsoid()
-{
-
 }
 
 
@@ -326,7 +325,6 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
   ec.setInputCloud (roi_pc);
   ec.extract (cluster_indices);
 
-
   // Predict roi centers then fit superellipsoids
   pcl::PointCloud<pcl::PointXYZ>::Ptr roi_centers (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr superellipsoids (new pcl::PointCloud<pcl::PointXYZ>);
@@ -344,13 +342,29 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     roi_centers->push_back(cp_pcl);
 
 
-    // todo: fit superellipsoid
+    // fit superellipsoid
+    auto parameters_ptr = fitSuperellipsoid(pc_tmp_, cp_pcl);
+
+    auto parameters = *parameters_ptr;
+    parameters[0] = 0.7; // a
+    parameters[1] = 0.7; // b
+    parameters[2] = 0.7; // c
+    parameters[3] = 0.7; // e1
+    parameters[4] = 0.7; // e2
+    parameters[5] = 0.0;
+    parameters[6] = 0.0;
+    parameters[7] = 0.0;
 
     // todo: sample superellipsoid -> only visualize if superellipsoid has subscribers
+    if (superellipsoid_pub.getNumSubscribers() > 0)
+    {
+      samplePointsSuperellipsoid(*parameters_ptr, superellipsoids);
+    }
 
   }
 
 
+  /////////////////////////////////////////////// VISUALIZATION PART ///////////////////////////////////////////////////////
   if (pc_roi_pub.getNumSubscribers() > 0 )
   {
     sensor_msgs::PointCloud2::Ptr roi_pc2_ros(new sensor_msgs::PointCloud2);
@@ -397,8 +411,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
 }
 
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   ros::init(argc, argv, "capsicum_superellipsoid_detector_node");
   ros::NodeHandle nh;
