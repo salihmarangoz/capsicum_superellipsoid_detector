@@ -20,6 +20,23 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
+// globals
+ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub, superellipsoid_pub;
+std::unique_ptr<tf::TransformListener> listener;
+
+
+#define SIGNUM(x) ((x)>0?+1.:-1.)
+
+double c_func(double w, double m)
+{
+  return SIGNUM(cos(w)) * pow(abs(cos(w)), m);
+}
+
+double s_func(double w, double m)
+{
+  return SIGNUM(sin(w)) * pow(abs(sin(w)), m);
+}
+
 
 struct SuperellipsoidError {
   SuperellipsoidError(double x, double y, double z)
@@ -72,22 +89,79 @@ struct SuperellipsoidError {
 
 
 
-// globals
-ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub, superellipsoid_pub;
-std::unique_ptr<tf::TransformListener> listener;
-
-
-
-#define SIGNUM(x) ((x)>0?+1.:-1.)
-
-double c_func(double w, double m)
+double[128] fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::PointXYZ center_prior, pcl::PointCloud<pcl::PointXYZ>::Ptr pc_visualization_output)
 {
-  return SIGNUM(cos(w)) * pow(abs(cos(w)), m);
+  // Fit superellipsoid using roi_centers
+  double parameters[128];
+  parameters[0] = 0.05; // a
+  parameters[1] = 0.05; // b
+  parameters[2] = 0.05; // c
+  parameters[3] = 0.5; // e1
+  parameters[4] = 0.5; // e2
+  parameters[5] = center_prior._PointXYZ::x;
+  parameters[6] = center_prior._PointXYZ::y;
+  parameters[7] = center_prior._PointXYZ::z;
+
+  Problem problem;
+  for (size_t i=0; i<pc->size(); i++) {
+    auto point_ = pc->at(i).getVector3fMap();
+    CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z());
+    problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
+  }
+
+  Solver::Options options;
+  options.max_num_iterations = 100; // todo
+  options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+  options.minimizer_progress_to_stdout = false;
+
+  Solver::Summary summary;
+  Solve(options, &problem, &summary);
+
+  if (!summary.IsSolutionUsable()) // report if the solution is not usable
+    std::cout << summary.BriefReport() << "\n";
+
+
+  // // https://en.wikipedia.org/wiki/Superellipsoid
+  if (superellipsoid_pub.getNumSubscribers() > 0)
+  {
+    double a_ = parameters[0];
+    double b_ = parameters[1];
+    double c_ = parameters[2];
+    double e1_ = parameters[3];
+    double e2_ = parameters[4];
+    double tx_ = parameters[5];
+    double ty_ = parameters[6];
+    double tz_ = parameters[7];
+
+    for (double uu=-M_PI/2; uu<M_PI/2; uu+=0.1)
+    {
+      for (double vv=-M_PI; vv<M_PI; vv+=0.2)
+      {
+        double r = 2/e2_;
+        double t = 2/e1_;
+
+        double x = a_ * c_func(vv, 2./t) * c_func(uu, 2./r);
+        double y = b_ * c_func(vv, 2./t) * s_func(uu, 2./r);
+        double z = c_ * s_func(vv, 2./t);
+
+        x = x + tx_;
+        y = y + ty_;
+        z = z + tz_;
+
+        pcl::PointXYZ point;
+        point.x = x;
+        point.y = y;
+        point.z = z;
+        pc_visualization_output->push_back(point);
+      }
+    }
+  }
 }
 
-double s_func(double w, double m)
+
+void samplePointsSuperellipsoid()
 {
-  return SIGNUM(sin(w)) * pow(abs(sin(w)), m);
+
 }
 
 
@@ -141,7 +215,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColoredCloud (pcl::PointCloud<pcl::Poi
   return (colored_cloud);
 }
 
-pcl::PointXYZ estimate_cluster_center(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, float search_radius=0.03, float regularization=2.5)
+pcl::PointXYZ estimateClusterCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, float search_radius=0.03, float regularization=2.5)
 {
   // Estimate Normals
   // TODO: This would be faster, maybe: Randomly sample some points or apply clustering then estimate normals
@@ -193,7 +267,7 @@ pcl::PointXYZ estimate_cluster_center(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc,
 
 
 // ======================================================================================================================================
-void pc_callback(const sensor_msgs::PointCloud2Ptr& pc_ros)
+void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
 {
   ROS_INFO_ONCE("Pointcloud received...");
 
@@ -266,79 +340,13 @@ void pc_callback(const sensor_msgs::PointCloud2Ptr& pc_ros)
       pc_tmp_->push_back(roi_pc->at(i_point));
     }
 
-    auto cp_pcl = estimate_cluster_center(pc_tmp_);
+    auto cp_pcl = estimateClusterCenter(pc_tmp_);
     roi_centers->push_back(cp_pcl);
 
-    //-------------------------------------------------
 
-    // Fit superellipsoid using roi_centers
-    double parameters[128];
-    parameters[0] = 0.05; // a
-    parameters[1] = 0.05; // b
-    parameters[2] = 0.05; // c
-    parameters[3] = 0.5; // e1
-    parameters[4] = 0.5; // e2
-    parameters[5] = cp_pcl._PointXYZ::x;
-    parameters[6] = cp_pcl._PointXYZ::y;
-    parameters[7] = cp_pcl._PointXYZ::z;
+    // todo: fit superellipsoid
 
-    Problem problem;
-    for (size_t i=0; i<pc_tmp_->size(); i++) {
-      auto point_ = pc_tmp_->at(i).getVector3fMap();
-
-      CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z());
-
-      problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters);
-    }
-
-    Solver::Options options;
-    options.max_num_iterations = 100; // todo
-    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.minimizer_progress_to_stdout = false;
-
-    Solver::Summary summary;
-    Solve(options, &problem, &summary);
-
-    if (!summary.IsSolutionUsable()) // report if the solution is not usable
-      std::cout << summary.BriefReport() << "\n";
-
-
-    // // https://en.wikipedia.org/wiki/Superellipsoid
-    if (superellipsoid_pub.getNumSubscribers() > 0)
-    {
-      double a_ = parameters[0];
-      double b_ = parameters[1];
-      double c_ = parameters[2];
-      double e1_ = parameters[3];
-      double e2_ = parameters[4];
-      double tx_ = parameters[5];
-      double ty_ = parameters[6];
-      double tz_ = parameters[7];
-
-      for (double uu=-M_PI/2; uu<M_PI/2; uu+=0.1)
-      {
-        for (double vv=-M_PI; vv<M_PI; vv+=0.2)
-        {
-          double r = 2/e2_;
-          double t = 2/e1_;
-
-          double x = a_ * c_func(vv, 2./t) * c_func(uu, 2./r);
-          double y = b_ * c_func(vv, 2./t) * s_func(uu, 2./r);
-          double z = c_ * s_func(vv, 2./t);
-
-          x = x + tx_;
-          y = y + ty_;
-          z = z + tz_;
-
-          pcl::PointXYZ point;
-          point.x = x;
-          point.y = y;
-          point.z = z;
-          superellipsoids->push_back(point);
-        }
-      }
-    }
-
+    // todo: sample superellipsoid -> only visualize if superellipsoid has subscribers
 
   }
 
@@ -404,7 +412,7 @@ main(int argc, char **argv)
   vis_pub = priv_nh.advertise<visualization_msgs::Marker>( "visualization_marker", 2);
   superellipsoid_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoid_out", 2);
 
-  ros::Subscriber pc_sub = nh.subscribe("pc_in", 10, pc_callback);
+  ros::Subscriber pc_sub = nh.subscribe("pc_in", 10, pcCallback);
 
   ros::spin();
   return 0;
