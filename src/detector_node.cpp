@@ -44,28 +44,19 @@ struct SuperellipsoidError {
 
   template <typename T> bool operator()(const T* const parameters,
                                         T* residual) const {
-    const T a_ = parameters[0];
-    const T b_ = parameters[1];
-    const T c_ = parameters[2];
-    const T e1_ = parameters[3];
-    const T e2_ = parameters[4];
+    const T a = parameters[0];
+    const T b = parameters[1];
+    const T c = parameters[2];
+    const T e1 = parameters[3];
+    const T e2 = parameters[4];
     const T tx_ = parameters[5];
     const T ty_ = parameters[6];
     const T tz_ = parameters[7];
 
-    // constraints (TODO)
-    auto a = abs(a_) + 0.00001;
-    auto b = abs(b_) + 0.00001;
-    auto c = abs(c_) + 0.00001;
-    auto e1 = abs(e1_) + 0.1;
-    auto e2 = abs(e2_) + 0.1;
-
     // translation
     auto x = abs(x_ - tx_);
-    auto y = abs(y_ - tx_);
-    auto z = abs(z_ - tx_);
-
-    //ROS_INFO("debug: %f %f %f", x, x_, tx);
+    auto y = abs(y_ - ty_);
+    auto z = abs(z_ - tz_);
 
     auto f1 = pow(pow(x/a, 2./e2) + pow(y/b, 2./e2), e2/e1) + pow(z/c, 2./e1);
     residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
@@ -93,14 +84,14 @@ boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::Po
 {
   // Fit superellipsoid using roi_centers
   auto parameters_ptr = boost::make_shared<std::vector<double>>();
-  parameters_ptr->resize(128);
+  parameters_ptr->resize(16);
   auto parameters = (*parameters_ptr).data();
 
-  parameters[0] = 0.05; // a
-  parameters[1] = 0.05; // b
-  parameters[2] = 0.05; // c
-  parameters[3] = 0.5; // e1
-  parameters[4] = 0.5; // e2
+  parameters[0] = 0.03; // a
+  parameters[1] = 0.03; // b
+  parameters[2] = 0.03; // c
+  parameters[3] = 0.8; // e1
+  parameters[4] = 0.8; // e2
   parameters[5] = center_prior._PointXYZ::x;
   parameters[6] = center_prior._PointXYZ::y;
   parameters[7] = center_prior._PointXYZ::z;
@@ -109,19 +100,33 @@ boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::Po
   for (size_t i=0; i<pc->size(); i++) {
     auto point_ = pc->at(i).getVector3fMap();
     CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z());
-    problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
+
+    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
+    problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
+
+  // lower/upper bounds
+  problem.SetParameterLowerBound(parameters, 0, 0.02); problem.SetParameterUpperBound(parameters, 0, 0.07); // a
+  problem.SetParameterLowerBound(parameters, 1, 0.02); problem.SetParameterUpperBound(parameters, 1, 0.07); // b
+  problem.SetParameterLowerBound(parameters, 2, 0.02); problem.SetParameterUpperBound(parameters, 2, 0.07); // c
+
+  problem.SetParameterLowerBound(parameters, 3, 0.1); problem.SetParameterUpperBound(parameters, 3, 0.9); // e1
+  problem.SetParameterLowerBound(parameters, 4, 0.1); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
 
   Solver::Options options;
   options.max_num_iterations = 100; // todo
+  options.num_threads = 16; // can be good with SMT
   options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-  options.minimizer_progress_to_stdout = false;
+  //options.initial_trust_region_radius = 0.01;
+  //options.max_trust_region_radius = 0.1;
+  options.minimizer_progress_to_stdout = true;
+  //options.check_gradients = true;
 
   Solver::Summary summary;
   Solve(options, &problem, &summary);
 
-  if (!summary.IsSolutionUsable()) // report if the solution is not usable
-    std::cout << summary.BriefReport() << "\n";
+  //if (!summary.IsSolutionUsable()) // report if the solution is not usable
+  //  std::cout << summary.BriefReport() << "\n";
 
   return parameters_ptr;
 }
@@ -139,12 +144,15 @@ void samplePointsSuperellipsoid(std::vector<double> parameters, pcl::PointCloud<
     double ty_ = parameters[6];
     double tz_ = parameters[7];
 
-    for (double uu=-M_PI/2; uu<M_PI/2; uu+=0.05)
+    //ROS_WARN("%f %f %f %f %f %f %f %f", a_, b_, c_, e1_, e2_, tx_, ty_, tz_);
+
+
+    for (double uu=-M_PI; uu<M_PI; uu+=0.05)
     {
-      for (double vv=-M_PI; vv<M_PI; vv+=0.05)
+      for (double vv=-M_PI/2; vv<M_PI/2; vv+=0.05)
       {
-        double r = 2/e2_;
-        double t = 2/e1_;
+        double r = 2./e2_;
+        double t = 2./e1_;
 
         double x = a_ * c_func(vv, 2./t) * c_func(uu, 2./r);
         double y = b_ * c_func(vv, 2./t) * s_func(uu, 2./r);
@@ -339,21 +347,24 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     }
 
     auto cp_pcl = estimateClusterCenter(pc_tmp_);
-    roi_centers->push_back(cp_pcl);
+    //roi_centers->push_back(cp_pcl);
 
 
     // fit superellipsoid
     auto parameters_ptr = fitSuperellipsoid(pc_tmp_, cp_pcl);
+    roi_centers->push_back(pcl::PointXYZ(parameters_ptr->at(5), parameters_ptr->at(6), parameters_ptr->at(7))); // todo
 
-    auto parameters = *parameters_ptr;
-    parameters[0] = 0.7; // a
-    parameters[1] = 0.7; // b
-    parameters[2] = 0.7; // c
-    parameters[3] = 0.7; // e1
-    parameters[4] = 0.7; // e2
-    parameters[5] = 0.0;
-    parameters[6] = 0.0;
-    parameters[7] = 0.0;
+/*  TEST SUPERELLIPSOID
+    auto parameters = (*parameters_ptr).data();
+    parameters[0] = 0.03; // a
+    parameters[1] = 0.03; // b
+    parameters[2] = 0.03; // c
+    parameters[3] = 0.6; // e1
+    parameters[4] = 0.6; // e2
+    parameters[5] = 1.0;
+    parameters[6] = 0.25;
+    parameters[7] = 0.5;
+*/
 
     // todo: sample superellipsoid -> only visualize if superellipsoid has subscribers
     if (superellipsoid_pub.getNumSubscribers() > 0)
@@ -425,7 +436,7 @@ int main(int argc, char **argv)
   vis_pub = priv_nh.advertise<visualization_msgs::Marker>( "visualization_marker", 2);
   superellipsoid_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoid_out", 2);
 
-  ros::Subscriber pc_sub = nh.subscribe("pc_in", 10, pcCallback);
+  ros::Subscriber pc_sub = nh.subscribe("pc_in", 1, pcCallback);
 
   ros::spin();
   return 0;
