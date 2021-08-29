@@ -14,6 +14,8 @@
 #include <pcl/segmentation/extract_clusters.h>
 
 #include "ceres/ceres.h"
+#include "ceres/rotation.h"
+
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
 using ceres::Problem;
@@ -42,8 +44,8 @@ double s_func(double w, double m)
 #define s_func_(w,m) (cos(w)/abs(sin(w)) * pow(abs(sin(w)), m))
 
 struct SuperellipsoidError {
-  SuperellipsoidError(double x, double y, double z)
-      : x_(x), y_(y), z_(z) {}
+  SuperellipsoidError(double x_, double y_, double z_)
+      : x(x_), y(y_), z(z_) {}
 
   template <typename T> bool operator()(const T* const parameters,
                                         T* residual) const {
@@ -52,29 +54,49 @@ struct SuperellipsoidError {
     const T c = parameters[2];
     const T e1 = parameters[3];
     const T e2 = parameters[4];
-    const T tx_ = parameters[5];
-    const T ty_ = parameters[6];
-    const T tz_ = parameters[7];
+    const T tx = parameters[5];
+    const T ty = parameters[6];
+    const T tz = parameters[7];
+    const T roll = parameters[8];
+    const T pitch = parameters[9];
+    const T yaw = parameters[10];
 
     // translation
-    auto x = abs(x_ - tx_);
-    auto y = abs(y_ - ty_);
-    auto z = abs(z_ - tz_);
+    auto x_ = abs(x - tx);
+    auto y_ = abs(y - ty);
+    auto z_ = abs(z - tz);
+
+    // rotation
+    T angles[3] = {roll, pitch, yaw};
+    T rotation_matrix[9];
+    ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
+    auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<T,3,3> >(rotation_matrix);
+
+    Eigen::Matrix<T, 3, 1> point {x_,y_,z_};
+    auto point_ = rotation_matrix_ * point;
+
+    auto x__ = point[0];
+    auto y__ = point[1];
+    auto z__ = point[2];
+
+    // loss
+    auto f1 = pow(pow(x__/a, 2./e2) + pow(y__/b, 2./e2), e2/e1) + pow(z__/c, 2./e1);
+    residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
+
+    /* EXPERIMENTAL
 
     auto u = atan2(y,x);
     auto v = 2.*asin(z);
     auto r = 2./e2;
     auto t = 2./e1;
-    auto x_ = a * c_func_(v, 2./t) * c_func_(u, 2./r);
-    auto y_ = b * c_func_(v, 2./t) * s_func_(u, 2./r);
-    auto z_ = c * s_func_(v, 2./t);
-    residual[0] = (x-x_)*0.001 ;
-    residual[1] = (y-y_)*0.001 ;
-    residual[2] = (z-z_)*0.001 ;
+    auto x__ = a * c_func_(v, 2./t) * c_func_(u, 2./r);
+    auto y__ = b * c_func_(v, 2./t) * s_func_(u, 2./r);
+    auto z__ = c * s_func_(v, 2./t);
+    residual[1] = (x_-x__)*0.001 ;
+    residual[2] = (y_-y__)*0.001 ;
+    residual[3] = (z_-z__)*0.001 ;
 
-    auto f1 = pow(pow(x/a, 2./e2) + pow(y/b, 2./e2), e2/e1) + pow(z/c, 2./e1);
-    residual[3] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
-
+    */
 
     return true;
   }
@@ -84,14 +106,14 @@ struct SuperellipsoidError {
   static ceres::CostFunction* Create(const double x,
                                      const double y,
                                      const double z) {
-    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 4, 8>(
+    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 1, 11>(
         new SuperellipsoidError(x, y, z)));
   }
 
  private:
-  const double x_;
-  const double y_;
-  const double z_;
+  const double x;
+  const double y;
+  const double z;
 };
 
 
@@ -111,21 +133,22 @@ boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::Po
   parameters[5] = center_prior._PointXYZ::x;
   parameters[6] = center_prior._PointXYZ::y;
   parameters[7] = center_prior._PointXYZ::z;
+  parameters[8] = 0.0; // roll
+  parameters[9] = 0.0; // pitch
+  parameters[10] = 0.0; //yaw
 
   Problem problem;
   for (size_t i=0; i<pc->size(); i++) {
     auto point_ = pc->at(i).getVector3fMap();
     CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z());
-
-    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
-    problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
+    problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
+    //problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
 
   // lower/upper bounds
   problem.SetParameterLowerBound(parameters, 0, 0.02); problem.SetParameterUpperBound(parameters, 0, 0.07); // a
   problem.SetParameterLowerBound(parameters, 1, 0.02); problem.SetParameterUpperBound(parameters, 1, 0.07); // b
   problem.SetParameterLowerBound(parameters, 2, 0.02); problem.SetParameterUpperBound(parameters, 2, 0.07); // c
-
   problem.SetParameterLowerBound(parameters, 3, 0.1); problem.SetParameterUpperBound(parameters, 3, 0.9); // e1
   problem.SetParameterLowerBound(parameters, 4, 0.1); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
 
@@ -157,6 +180,16 @@ void samplePointsSuperellipsoid(std::vector<double> parameters, pcl::PointCloud<
     double tx_ = parameters[5];
     double ty_ = parameters[6];
     double tz_ = parameters[7];
+    double roll_ = parameters[8];
+    double pitch_ = parameters[9];
+    double yaw_ = parameters[10];
+
+
+    // rotation
+    double angles[3] = {-roll_, -pitch_, -yaw_};
+    double rotation_matrix[9];
+    ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
+    auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<double,3,3> >(rotation_matrix);
 
     for (double uu=-M_PI; uu<M_PI; uu+=0.05)
     {
@@ -169,15 +202,18 @@ void samplePointsSuperellipsoid(std::vector<double> parameters, pcl::PointCloud<
         double y = b_ * c_func(vv, 2./t) * s_func(uu, 2./r);
         double z = c_ * s_func(vv, 2./t);
 
-        x = x + tx_;
-        y = y + ty_;
-        z = z + tz_;
+        Eigen::Matrix<double, 3, 1> point {x,y,z};
+        auto point_ = rotation_matrix_ * point;
 
-        pcl::PointXYZ point;
-        point.x = x;
-        point.y = y;
-        point.z = z;
-        pc_visualization_output->push_back(point);
+        x = point_[0] + tx_;
+        y = point_[1] + ty_;
+        z = point_[2] + tz_;
+
+        pcl::PointXYZ point__;
+        point__.x = x;
+        point__.y = y;
+        point__.z = z;
+        pc_visualization_output->push_back(point__);
       }
     }
 }
