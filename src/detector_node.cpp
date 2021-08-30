@@ -62,41 +62,45 @@ struct SuperellipsoidError {
     const T yaw = parameters[10];
 
     // translation
-    auto x_ = abs(x - tx);
-    auto y_ = abs(y - ty);
-    auto z_ = abs(z - tz);
+    auto x_ = x - tx;
+    auto y_ = y - ty;
+    auto z_ = z - tz;
 
     // rotation
-    T angles[3] = {roll, pitch, yaw};
+    const T angles[3] = {-roll, -pitch, -yaw};
     T rotation_matrix[9];
     ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
-    auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<T,3,3> >(rotation_matrix);
+    auto rotation_matrix_ = Eigen::Matrix<T,3,3>(rotation_matrix);
 
     Eigen::Matrix<T, 3, 1> point {x_,y_,z_};
+
     auto point_ = rotation_matrix_ * point;
 
-    auto x__ = point[0];
-    auto y__ = point[1];
-    auto z__ = point[2];
+    const T x__ = point_[0];
+    const T y__ = point_[1];
+    const T z__ = point_[2];
 
     // loss
-    auto f1 = pow(pow(x__/a, 2./e2) + pow(y__/b, 2./e2), e2/e1) + pow(z__/c, 2./e1);
+    const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
     residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
 
-    /* EXPERIMENTAL
+    // EXPERIMENTAL
+    //residual[0] = f1-1.0;
 
+    /* EXPERIMENTAL
     auto u = atan2(y,x);
     auto v = 2.*asin(z);
     auto r = 2./e2;
     auto t = 2./e1;
-    auto x__ = a * c_func_(v, 2./t) * c_func_(u, 2./r);
-    auto y__ = b * c_func_(v, 2./t) * s_func_(u, 2./r);
-    auto z__ = c * s_func_(v, 2./t);
-    residual[1] = (x_-x__)*0.001 ;
-    residual[2] = (y_-y__)*0.001 ;
-    residual[3] = (z_-z__)*0.001 ;
-
+    auto x___ = a * c_func_(v, 2./t) * c_func_(u, 2./r);
+    auto y___ = b * c_func_(v, 2./t) * s_func_(u, 2./r);
+    auto z___ = c * s_func_(v, 2./t);
+    const double C = 0.1;
+    residual[1] = (abs(x__)-x___)*C ;
+    residual[2] = (abs(y__)-y___)*C ;
+    residual[3] = (abs(z__)-z___)*C ;
     */
+
 
     return true;
   }
@@ -141,8 +145,8 @@ boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::Po
   for (size_t i=0; i<pc->size(); i++) {
     auto point_ = pc->at(i).getVector3fMap();
     CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z());
-    problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
-    //problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
+    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(1.0), parameters); // loss todo
+    problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
 
   // lower/upper bounds
@@ -161,7 +165,10 @@ boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::Po
 
   Solver::Summary summary;
   Solve(options, &problem, &summary);
-  //  std::cout << summary.BriefReport() << "\n";
+  std::cout << summary.BriefReport() << "\n";
+  //std::cout << summary.FullReport() << "\n";
+
+  ROS_FATAL("%f %f %f", parameters[8], parameters[9], parameters[10]);
 
   if (summary.IsSolutionUsable())
     return parameters_ptr;
@@ -186,7 +193,7 @@ void samplePointsSuperellipsoid(std::vector<double> parameters, pcl::PointCloud<
 
 
     // rotation
-    double angles[3] = {-roll_, -pitch_, -yaw_};
+    double angles[3] = {roll_, pitch_, yaw_};
     double rotation_matrix[9];
     ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
     auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<double,3,3> >(rotation_matrix);
@@ -394,7 +401,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     }
 
     auto cp_pcl = estimateClusterCenter(pc_tmp_);
-    //roi_centers->push_back(cp_pcl);
+    roi_centers->push_back(cp_pcl);
 
 
     // fit superellipsoid
@@ -416,6 +423,9 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     parameters[5] = 1.0;
     parameters[6] = 0.25;
     parameters[7] = 0.5;
+    parameters[8] = 60.0;  // roll
+    parameters[9] = 0.0; // pitch
+    parameters[10] = 30.0; // yaw
 */
 
     // todo: sample superellipsoid -> only visualize if superellipsoid has subscribers

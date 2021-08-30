@@ -5,7 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /roi1
+        - /Superellipsoid1
       Splitter Ratio: 0.5
     Tree Height: 1147
   - Class: rviz/Selection
@@ -99,14 +99,14 @@ Visualization Manager:
     - Alpha: 0.8999999761581421
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
+        Max Value: 0.6031962037086487
+        Min Value: 0.0105767035856843
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: RGB8
+      Color: 78; 154; 6
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -117,7 +117,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.0020000000949949026
+      Size (m): 0.004999999888241291
       Style: Spheres
       Topic: /capsicum_superellipsoid_detector/pc_roi_out
       Unreliable: false
@@ -229,18 +229,18 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.02500000037252903
+      Size (m): 0.009999999776482582
       Style: Boxes
       Topic: /capsicum_superellipsoid_detector/centers_out
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
-    - Alpha: 0.009999999776482582
+    - Alpha: 0.20000000298023224
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 0.6064621210098267
-        Min Value: 0.25562524795532227
+        Max Value: 0.608267068862915
+        Min Value: 0.25268614292144775
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -256,9 +256,9 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.004999999888241291
-      Style: Spheres
+      Size (Pixels): 5
+      Size (m): 0.0024999999441206455
+      Style: Points
       Topic: /capsicum_superellipsoid_detector/superellipsoid_out
       Unreliable: false
       Use Fixed Frame: true
@@ -300,7 +300,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.8488149642944336
+      Distance: 0.4373512268066406
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -308,17 +308,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.007819491438567638
-        Y: 0.5309804677963257
-        Z: 0.44067874550819397
+        X: 0.176778644323349
+        Y: 0.6197091341018677
+        Z: 0.5168580412864685
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5897977352142334
+      Pitch: 0.3247983455657959
       Target Frame: <Fixed Frame>
-      Yaw: 0.6342162489891052
+      Yaw: 1.0692187547683716
     Saved: ~
 Window Geometry:
   Displays:
