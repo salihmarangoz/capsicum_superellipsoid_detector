@@ -44,8 +44,8 @@ double s_func(double w, double m)
 #define s_func_(w,m) (cos(w)/abs(sin(w)) * pow(abs(sin(w)), m))
 
 struct SuperellipsoidError {
-  SuperellipsoidError(double x_, double y_, double z_)
-      : x(x_), y(y_), z(z_) {}
+  SuperellipsoidError(double x_, double y_, double z_, double *priors_)
+      : x(x_), y(y_), z(z_), priors(priors_) {}
 
   template <typename T> bool operator()(const T* const parameters,
                                         T* residual) const {
@@ -60,6 +60,10 @@ struct SuperellipsoidError {
     const T roll = parameters[8];
     const T pitch = parameters[9];
     const T yaw = parameters[10];
+
+    const double prior_tx = priors[0];
+    const double prior_ty = priors[1];
+    const double prior_tz = priors[2];
 
     // translation
     auto x_ = x - tx;
@@ -83,6 +87,15 @@ struct SuperellipsoidError {
     // loss
     const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
     residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
+    //residual[0] = f1 - 1.;
+
+    // EXPERIMENTAL !!!!
+    // regularization via prior
+    // adding 0.001 makes sqrt safer!
+    const double C = 0.1;
+    residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
+    const double D = 0.1;
+    residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
 
     // EXPERIMENTAL
     //residual[0] = f1-1.0;
@@ -101,7 +114,6 @@ struct SuperellipsoidError {
     residual[3] = (abs(z__)-z___)*C ;
     */
 
-
     return true;
   }
 
@@ -109,43 +121,52 @@ struct SuperellipsoidError {
   // the client code.
   static ceres::CostFunction* Create(const double x,
                                      const double y,
-                                     const double z) {
-    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 1, 11>(
-        new SuperellipsoidError(x, y, z)));
+                                     const double z,
+                                     double* const priors) {
+    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 3, 11>( // residual_size, parameters_size
+        new SuperellipsoidError(x, y, z, priors)));
   }
 
  private:
   const double x;
   const double y;
   const double z;
+  const double *priors;
 };
 
 
 
 boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::PointXYZ center_prior)
 {
-  // Fit superellipsoid using roi_centers
   auto parameters_ptr = boost::make_shared<std::vector<double>>();
-  parameters_ptr->resize(16);
+  parameters_ptr->resize(32);
   auto parameters = (*parameters_ptr).data();
+
+  auto priors_ptr = boost::make_shared<std::vector<double>>();
+  priors_ptr->resize(32);
+  auto priors = (*priors_ptr).data();
 
   parameters[0] = 0.03; // a
   parameters[1] = 0.03; // b
   parameters[2] = 0.03; // c
   parameters[3] = 0.3; // e1
   parameters[4] = 0.3; // e2
-  parameters[5] = center_prior._PointXYZ::x;
-  parameters[6] = center_prior._PointXYZ::y;
-  parameters[7] = center_prior._PointXYZ::z;
+  parameters[5] = center_prior._PointXYZ::x; // tx
+  parameters[6] = center_prior._PointXYZ::y; // ty
+  parameters[7] = center_prior._PointXYZ::z; // tz
   parameters[8] = 0.0; // roll
   parameters[9] = 0.0; // pitch
   parameters[10] = 0.0; //yaw
 
+  priors[0] = center_prior._PointXYZ::x; // tx
+  priors[1] = center_prior._PointXYZ::y; // ty
+  priors[2] = center_prior._PointXYZ::z; // tz
+
   Problem problem;
   for (size_t i=0; i<pc->size(); i++) {
     auto point_ = pc->at(i).getVector3fMap();
-    CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z());
-    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(1.0), parameters); // loss todo
+    CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors);
+    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
     problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
 
@@ -153,8 +174,8 @@ boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::Po
   problem.SetParameterLowerBound(parameters, 0, 0.02); problem.SetParameterUpperBound(parameters, 0, 0.07); // a
   problem.SetParameterLowerBound(parameters, 1, 0.02); problem.SetParameterUpperBound(parameters, 1, 0.07); // b
   problem.SetParameterLowerBound(parameters, 2, 0.02); problem.SetParameterUpperBound(parameters, 2, 0.07); // c
-  problem.SetParameterLowerBound(parameters, 3, 0.1); problem.SetParameterUpperBound(parameters, 3, 0.9); // e1
-  problem.SetParameterLowerBound(parameters, 4, 0.1); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
+  problem.SetParameterLowerBound(parameters, 3, 0.3); problem.SetParameterUpperBound(parameters, 3, 0.9); // e1
+  problem.SetParameterLowerBound(parameters, 4, 0.3); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
 
   Solver::Options options;
   options.max_num_iterations = 100; // todo
