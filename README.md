@@ -59,7 +59,23 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 ## Meetings
 
-### 26-Aug 2021
+### 2-Sep-2021
+
+- Added rotation to optimization parameters. Also two experimental regularizers are used for obtaining better results for clusters including only a few points. **When there is enough points the algorithm works very well.**
+- IDEA: Experimental regularizers are only for experimentation. So, the distance between the predicted centroid and superellipsoid center point can be used for scanning quality, maybe? 
+  - Or centroid prediction using normals can be used for the scanning quality; The algorithm accumulates a matrix (like a covariance matrix), so maybe it can be used for computing the information about the scan quality.
+- PROBLEM: Ground truth data looks shifted a few cm's. More precise ground truth data can be obtained via mapping the pointcloud in the simulation.
+- TODO: I will install the DL package and implement its ROI prediction output to the package, and will try to get results for the real world.
+- TODO: I need to accumulate roi and non-roi points into two different octomaps. ROI octomap doesn't need to include empty voxels!
+
+|                                      |                                      |
+| ------------------------------------ | ------------------------------------ |
+| ![1](imgs/4_experimental_fits/1.png) | ![2](imgs/4_experimental_fits/2.png) |
+| ![3](imgs/4_experimental_fits/3.png) | ![4](imgs/4_experimental_fits/4.png) |
+
+
+
+### 26-Aug-2021
 
 - Heap corruption problem is solved with compiling PCL and Ceres-Solver. https://github.com/PointCloudLibrary/pcl/issues/4904 helped me to find that the root of the problem is the alignment of Eigen variables. **Solution added as the Dependencies section to the README.md**
 - Fixed ceres-solver can't found while compiling in an empty workspace.
