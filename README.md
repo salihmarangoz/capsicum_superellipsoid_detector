@@ -2,6 +2,8 @@
 
 [toc]
 
+**Salih Marangoz - s6samara@uni-bonn.de - salih285@gmail.com**
+
 ## Dependencies
 
 ```bash
@@ -58,6 +60,24 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 
 ## Meetings
+
+
+
+### 16-Sep-2021
+
+- Timestamps in rosbags are weird. Depth data lags behind of RGB about 6 seconds. `queue_size` value can be decreased down to between 2 or 10 for the node which publishes `/camera/aligned_depth_to_color/*`. This would improve the overall quality of the datasets. Or aligning process can be done on-live.
+
+- Experimented on `armbag__2020-09-11-14-38-57 (EXPLO_SAMPLING).bag`
+- Octomap resolution with `0.002`. It was OK even though storing all free cells.
+- QUESTION: Should I go with;
+  - Reducing the sensor noise & shadowing effect with filters and continue mapping with octomap?
+  - Trying Scene Registration algorithms (e.g. Kinect Fusion as mentioned in the [paper](papers/capsicum_pose_estimation_and_grasping.pdf))? If so, then I will need to register mask information as well.
+
+![5_real_world_peppers_diagram](imgs/5_real_world_peppers_diagram.png)
+
+![5_real_world_peppers](imgs/5_real_world_peppers.png)
+
+
 
 ### 9-Sep-2021 (Postponed to 10 Sept)
 
