@@ -71,7 +71,7 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 - Octomap resolution with `0.002`. It was OK even though storing all free cells.
 - QUESTION: Should I go with;
   - Reducing the sensor noise & shadowing effect with filters and continue mapping with octomap?
-  - Trying Scene Registration algorithms (e.g. Kinect Fusion as mentioned in the [paper](papers/capsicum_pose_estimation_and_grasping.pdf))? If so, then I will need to register mask information as well.
+  - Trying Scene Registration algorithms (e.g. Kinect Fusion as mentioned in the [paper](papers/capsicum_pose_estimation_and_grasping.pdf))? If so, then I will need to register mask information as well. Possible implementation of Kinect Fusion: https://pointclouds.org/documentation/classpcl_1_1gpu_1_1kinfu_l_s_1_1_kinfu_tracker.html
 
 ![5_real_world_peppers_diagram](imgs/5_real_world_peppers_diagram.png)
 
