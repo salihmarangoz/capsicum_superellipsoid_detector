@@ -81,11 +81,17 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 - I have tried some implementations from Github;
   - https://github.com/personalrobotics/kinfu_ros (coded for sm20, not compatible)
   - https://github.com/Nerei/kinfu_remake (too old)
+  - `$ svn checkout http://fsstud.is.uni-due.de/svn/ros/is/kinfu` (RMonica version is better. Many modifications applied to make it work but the results are bad)
   - https://github.com/RMonica/ros_kinfu (works!) (Tested on `2020-07-15-16-22-45.bag`)
-  - ![6_ros_kinfu](imgs/6_ros_kinfu.gif)
+    - ![6_ros_kinfu](imgs/6_ros_kinfu.gif)
+    - RMonika can use TF hints for the ICP. This is not included in the PCL version. This may be useful with the robotic arm. We can directly use tf data for mapping or give this hint to ICP for better initialization and estimate difference between map and kinfu frames (like /map and /odom). 
 - Some links:
   - Concept behind Kinfu Large Scale: https://www.youtube.com/watch?v=Ktc_NuJ2oIk
   - https://pcl.readthedocs.io/projects/tutorials/en/latest/using_kinfu_large_scale.html
+    - https://answers.ros.org/question/287835/kinfu-for-3d-slam-and-navigation/
+    - https://answers.ros.org/question/142461/pcl-kinfu-in-ros-hydro/
+
+- **QUESTION:** Should I make a kinfu_ros package while getting hints from RMonica implementation? Or should I go with RTABMAP or other 3d mapping algorithms? Do we have a better implementation in the group?
 
 
 
