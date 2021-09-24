@@ -92,6 +92,8 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
     - https://answers.ros.org/question/142461/pcl-kinfu-in-ros-hydro/
 
 - **QUESTION:** Should I make a kinfu_ros package while getting hints from RMonica implementation? Or should I go with RTABMAP or other 3d mapping algorithms? Do we have a better implementation in the group?
+- **QUESTION:** Kinect Fusion algorithm looks patented: https://patents.google.com/patent/US9563954B2/en Should I continue?
+- **IDEA:** It looks possible to track textures and render an augmented image from the camera viewpoint. Maybe we can feed it to the MaskRCNN model. But I haven't seen an already working implementation. Regarding code lines are commented out. 
 
 
 
