@@ -8,11 +8,11 @@
 
 ```bash
 $ cd $HOME
-$ git clone https://github.com/PointCloudLibrary/pcl.git -b pcl-1.10.0
+$ git clone https://github.com/PointCloudLibrary/pcl.git -b pcl-1.10.1
 $ cd pcl; mkdir build; cd build
-$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_CUDA=1 -DBUILD_GPU=1 -DBUILD_cuda_io=1 -DBUILD_cuda_apps=1 -DBUILD_gpu_surface=1 -DBUILD_gpu_tracking=1 -DBUILD_gpu_people=1 -DBUILD_simulation=1 -DBUILD_apps=1 -DBUILD_examples=1 -DCUDA_ARCH_BIN=8.6 # Check values for CUDA_ARCH_BIN here: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/ For example; I have added 8.6 for my RTX3080. Not all of the modules here are needed but the total build size is not large when everything is compiled (~600MB).
 $ make -j8
-$ sudo make install  # "sudo make uninstall" is also possible. Don't delete the folder
+$ sudo make install  # "sudo make uninstall" is also possible. Don't delete the folder nor rename it
 
 $ cd catkin_ws/src
 $ git clone https://github.com/ceres-solver/ceres-solver.git
@@ -37,6 +37,18 @@ $ source catkin_ws/devel/setup.bash
 $ roslaunch capsicum_superellipsoid_detector start.launch
 ```
 
+### Test Kinfu (with GPU)
+
+![6_pcl_kinfu_test](imgs/6_pcl_kinfu_test.png)
+
+```bash
+$ pcl/build/bin/pcl_kinfu_app -pcd pcl/test/grabber_sequences/pcd
+# Press T on "View3D from ray tracing" window and press P on "Scene Cloud Viewer" window
+# Also check nvidia-smi
+```
+
+
+
 
 
 ## Debugging
@@ -60,6 +72,20 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 
 ## Meetings
+
+
+
+### 23-Sep-2021 (Postponed to 24 Sept)
+
+- Need to compile PCL with CUDA configuration for using kinfu. But, PCL 1.10.0 has a [issue](https://github.com/PointCloudLibrary/pcl/issues/3728) compiling with CUDA so I have tried with 1.10.1 as mentioned, no issues so far. I have updated PCL compile instructions in this Readme.
+- I have tried some implementations from Github;
+  - https://github.com/personalrobotics/kinfu_ros (coded for sm20, not compatible)
+  - https://github.com/Nerei/kinfu_remake (too old)
+  - https://github.com/RMonica/ros_kinfu (works!) (Tested on `2020-07-15-16-22-45.bag`)
+  - ![6_ros_kinfu](imgs/6_ros_kinfu.gif)
+- Some links:
+  - Concept behind Kinfu Large Scale: https://www.youtube.com/watch?v=Ktc_NuJ2oIk
+  - https://pcl.readthedocs.io/projects/tutorials/en/latest/using_kinfu_large_scale.html
 
 
 
