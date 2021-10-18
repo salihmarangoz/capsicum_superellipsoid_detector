@@ -73,6 +73,30 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 ## Meetings
 
+### 18-Oct-2021
+
+- I have tested more with `kinfu_ros` but this method loses tracking when robot arm moves a bit faster or gets closer to leaves. I think using this method with discontinuous rgbd sampling (sampling then moving robot arm then sampling again then moving robot arm...) may not work well.
+
+- I am testing different methods and compare them. Not finished yet. Currently `rtabmap_ros` looks promising. But I have several questions:
+  - Do we need a full-SLAM? Or odometry from robot arm would be enough? Or fusing encoder information and visual odometry together and mapping?
+  - Directly mapping RGBD can be problematic. But improving depth quality with `Fast Generation of High Fidelity RGB-D Images by Deep-Learning with Adaptive Convolution` is also possible. More information down below.
+  - Can we obtain good measurements from robot arm for mapping? What about timing and accuracy of 2D SLAM?
+
+| Method                                                   | ROS?                                                        | Video                                               | Texture Mapping? | Try Order |
+| -------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------- | ---------------- | --------- |
+| [fastfusion](https://github.com/tum-vision/fastfusion)   | [fastfusion_ros](https://github.com/karrerm/fastfusion_ros) | [here](https://www.youtube.com/watch?v=7s9JePSln-M) | Yes              | 3.        |
+| [dvo_slam](https://github.com/tum-vision/dvo_slam)       | Yes.                                                        | [here](https://www.youtube.com/watch?v=jNbYcw_dmcQ) | Yes              | 2.        |
+| [ElasticFusion](https://github.com/mp3guy/ElasticFusion) | [elastic_bridge](https://github.com/RMonica/elastic_bridge) | [here](https://www.youtube.com/watch?v=XySrhZpODYs) | Yes              | 4.        |
+| [Kintinuous](https://github.com/mp3guy/Kintinuous)       | No.                                                         | [here](https://www.youtube.com/watch?v=mqp3bWqxDsc) | Yes              | 5.        |
+| [rtabmap_ros](http://wiki.ros.org/rtabmap_ros)           | Yes.                                                        | [here](https://www.youtube.com/watch?v=xbKVhZQFKgA) | Yes              | 1.        |
+
+- Also, I found this which can be useful for filtering robot arm from rgbd sensor: http://wiki.ros.org/rgbd_self_filter
+
+- Also; Fast Generation of High Fidelity RGB-D Images by Deep-Learning with Adaptive Convolution: [paper](https://arxiv.org/pdf/2002.05067.pdf) and [code](https://github.com/chuhuaxian/HF-RGBD). This work reduces ghosting and increases depth quality. I think this can be used for super-resolution mapping of capsicums.
+
+- Also found a similar work: https://www.mdpi.com/1424-8220/19/2/428/htm
+- For mapping of a fruit: https://www.preprints.org/manuscript/202105.0468/download/final_file But this method needs focusing a single object and moving around it. 
+
 
 
 ### 23-Sep-2021 (Postponed to 24 Sept)
