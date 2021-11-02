@@ -37,18 +37,6 @@ $ source catkin_ws/devel/setup.bash
 $ roslaunch capsicum_superellipsoid_detector start.launch
 ```
 
-### Test Kinfu (with GPU)
-
-![6_pcl_kinfu_test](imgs/6_pcl_kinfu_test.png)
-
-```bash
-$ pcl/build/bin/pcl_kinfu_app -pcd pcl/test/grabber_sequences/pcd
-# Press T on "View3D from ray tracing" window and press P on "Scene Cloud Viewer" window
-# Also check nvidia-smi
-```
-
-
-
 
 
 ## Debugging
@@ -72,6 +60,47 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 
 ## Meetings
+
+### 02-Nov-2021
+
+- Opened a new repository: https://gitlab.igg.uni-bonn.de/hrl_students/salih-marangoz-hiwi/kinfu_ls_ros
+  - Checked PCL and RMonica implementations. **Selected PCL implementation as a base.** RMonica says; *"As of 2018-03-12, the integrated source code diverged significantly from original KinFu, due to many off-by-one errors which were discovered and fixed in the rolling buffer code. The code is not backward compatible with original KinFu."*. Also the RMonica ROS implementation has many synchronization problems on ROS messages. So, I started analyzing example code in the PCL (`pcl-1.10.1`) located here: https://github.com/PointCloudLibrary/pcl/blob/pcl-1.10.1/gpu/kinfu_large_scale/tools/kinfuLS_app.cpp Unfortunately there is no documentation and also every kinfu implementation uses their modified version of kinfu package so it is difficult, so implementation take a bit more time.
+
+
+
+
+
+### 26-Oct-2021
+
+I got stuck and decided to read papers instead of analyzing codes.
+
+- Read a survey and a thesis (took my most of the time):
+  - 3D Scanning Using RGBD Imaging Devices: A Survey:  [hitomi2015.pdf](papers/hitomi2015.pdf) 
+  - High-Quality 3D Reconstruction from Low-Cost RGB-D Sensors:  [1516463.pdf](papers/1516463.pdf)  (mostly for better texture and surface estimation)
+  - case study: implementing a 3D scanner with PCL:  [PirovanoMichele-VisualReconstructionReport.pdf](papers/PirovanoMichele-VisualReconstructionReport.pdf) 
+
+- Main idea is:
+
+TSDF (Truncated Signed Distance Fields) is used for the mapping. 
+
+![](https://i.postimg.cc/ydCn6L0p/Capture.jpg)
+
+While negative values indicates inside the object, positive values indicate outside of the object. Zero values represent the surface. Assuming that two depth images are aligned; base TSDF is built using the first image, and the next TSDF is built using the second image. The candidate TSDF is computed via using moving average on base TSDF with feeding next TSDF's. The surface then can be computed via marching cubes algorithm or Poisson reconstruction algorithm. It is also possible to predict depth image via raycasting over TSDF volume.
+
+Also Octree implementation of TSDF also present on Github: https://github.com/saimanoj18/TSDFOctree (including texture information). Can be useful if it is not possible to use GPU. **But haven't tried it yet.** Videos from another projects with a similar ideas: https://www.youtube.com/watch?v=XlnO3GBNPvc and https://www.youtube.com/watch?v=sXEzLGJozQQ
+
+According to `PirovanoMichele` **Kinfu** doesn't use RGB values for TSDF construction or edge-preserving. If better resolution is needed better algorithms are needed. For now it should be better to try `andyzeng/tsdf-fusion` package first. 
+
+- Tried some implementations:
+  - https://github.com/andyzeng/tsdf-fusion (can be used for combining different depth images)
+    - Replace utils.hpp:40 with `cv::Mat depth_mat = cv::imread(filename, cv::IMREAD_UNCHANGED);`
+    - Modify compile.sh:11 from `opencv` to `opencv4`
+  - https://github.com/andyzeng/tsdf-fusion-python (works without any problems.)
+- Also I am planning to try these, looks like a better implementation of Kinfu:
+  - https://github.com/ros-industrial/yak_ros (yak -> yet another kinfu)
+- Extra: `clear_params` launch parameter can be useful sometimes: http://wiki.ros.org/roslaunch/XML/node
+
+
 
 ### 18-Oct-2021
 
