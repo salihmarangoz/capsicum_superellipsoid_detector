@@ -6,6 +6,8 @@
 
 ## Dependencies
 
+- PCL
+
 ```bash
 $ cd $HOME
 $ git clone https://github.com/PointCloudLibrary/pcl.git -b pcl-1.10.1
@@ -13,11 +15,25 @@ $ cd pcl; mkdir build; cd build
 $ cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_CUDA=1 -DBUILD_GPU=1 -DBUILD_cuda_io=1 -DBUILD_cuda_apps=1 -DBUILD_gpu_surface=1 -DBUILD_gpu_tracking=1 -DBUILD_gpu_people=1 -DBUILD_simulation=1 -DBUILD_apps=1 -DBUILD_examples=1 -DCUDA_ARCH_BIN=8.6 # Check values for CUDA_ARCH_BIN here: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/ For example; I have added 8.6 for my RTX3080. Not all of the modules here are needed but the total build size is not large when everything is compiled (~600MB).
 $ make -j8
 $ sudo make install  # "sudo make uninstall" is also possible. Don't delete the folder nor rename it
+```
 
+- Voxblox (See for more: https://voxblox.readthedocs.io/en/latest/pages/Installation.html)
+
+```bash
+$ cd catkin_ws/src
+$ mkdir voxblox
+$ cd voxblox
+$ git clone git@github.com:ethz-asl/voxblox.git
+$ wstool init . ./voxblox/voxblox_ssh.rosinstall
+$ sudo apt-get install python-wstool python-catkin-tools ros-kinetic-cmake-modules protobuf-compiler autoconf
+```
+
+- Others
+
+```bash
 $ cd catkin_ws/src
 $ git clone https://github.com/ceres-solver/ceres-solver.git
 $ git clone https://github.com/ros-perception/perception_pcl.git -b melodic-devel
-
 $ rosdep install --from-paths src --ignore-src -r # for other dependencis
 ```
 
@@ -57,9 +73,98 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 
 
+## Backup Forks
+
+- https://github.com/salihmarangoz/voxblox
+- https://github.com/salihmarangoz/OpenChisel
+- https://github.com/salihmarangoz/DirectionalTSDF
+- https://github.com/salihmarangoz/perception_pcl
+
 
 
 ## Meetings
+
+
+
+### 17-Dec-2021
+
+![Screenshot from 2021-12-17 00-15-41](imgs/7_voxblox/Screenshot from 2021-12-17 00-15-41.png)
+
+![Screenshot from 2021-12-17 02-18-18](imgs/7_voxblox/Screenshot from 2021-12-17 02-18-18.png)
+
+![Screenshot from 2021-12-17 05-21-48](imgs/7_voxblox/Screenshot from 2021-12-17 05-21-48.png)
+
+- SUMMARY: I got good results with Voxblox. It worked perfectly with Gazebo and produced very good results on real world data. 
+- **`Backup Forks`** section is added.
+
+- Voxblox is the best solution to the mapping problem for now. Features/Pros:
+
+  - Project is still alive and getting updates.
+  - Full ROS compatible.
+  - Uses CPU & RAM instead of GPU. Slower computation but chunk switchings are much more faster.
+  - Includes ICP for better mapping. Pose corrections can be accumulated or not depending on optional parameters.
+  - Supports color mode.
+  - Publishes mesh by default. Surface pointcloud (computed via reconstruction) can be published via a service.
+  - TSDF can be published via a service.
+  - Mapping depth data to TSDF is very good. I was having problems with PCL Kinfu in this category.
+
+  
+
+- `StatisticalOutlierRemoval` is able to remove most of the shadow points. Set $$mean_k > 15$$ for a good filtering (but increasing this value hurts the performance a lot).
+
+  - Alternatively **`pcl::ShadowPoints`**  can be used but there is no ready to use ROS Node. But this method needs surface normal estimation (using Kd-Tree) so if **k** values are same with the statistical outlier filter then computation time would be very similar.
+  - Here is the roslaunch section:
+
+```xml
+<node pkg="nodelet" type="nodelet" name="statistical_filter" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
+	<remap from="~input" to="camera/depth_registered/points"/>
+	<remap from="~output" to="camera/depth_registered/points_filtered"/>
+	<param name="mean_k" value="20"/>
+	<param name="stddev" value="0.01"/>
+	<param name="negative" value="false"/>
+</node>
+```
+
+- Before finding **Voxblox** I have tried these projects (mostly in order and including all past experiments):
+
+  - https://github.com/RMonica/ros_kinfu
+    - Works good at the first sight with ROS but has many problem including TF and message syncronization. Too optimistic about the timing.
+    - The code is not backwards compatible with the PCL kinfu.
+    - Highly modified so things are different than PCL kinfu docs.
+  - https://github.com/andyzeng/tsdf-fusion
+    - Replace utils.hpp:40 with `cv::Mat depth_mat = cv::imread(filename, cv::IMREAD_UNCHANGED);` and modify compile.sh:11 from `opencv` to `opencv4`
+    - Has python implementation: https://github.com/andyzeng/tsdf-fusion-python
+    - No ROS.
+    - Last updated 4 years ago. 
+  - http://wiki.ros.org/rtabmap_ros
+    - Not good for mapping small objects. TSDF methods are better for this kind of agricultural projects.
+  - https://github.com/mp3guy/ElasticFusion
+    - Says; "The system relies on an extremely fast and tight coupling between the mapping and tracking on the GPU, which I don't believe ROS supports natively in terms of message passing."
+  - https://github.com/mp3guy/Kintinuous
+    - Says; "If you have ROS installed you're likely to run into some truly horrible build issues."
+
+  - https://gitlab.igg.uni-bonn.de/hrl_students/salih-marangoz-hiwi/kinfu_ls_ros
+    - Copied kinfu_ros from PCL 1.10.1 then modified.
+    - ICP is unstable.
+    - Switching chunks takes a lot of time. Bigger chunks takes more time, small chunks increase the frequency of switching. Difficult to bear with realtime operation.
+    - TSDF and output pointcloud have alignment problems. Also input depth is being processed incorrectly. But I was unable to find the problem in the both cases. Also camera focal points, etc. Nightmare.
+  - https://github.com/Nerei/kinfu_remake
+    - Remake of PCL Kinfu.
+    - Code is independent from PCL.
+    - I had some problems while implementing ROS in it and got stuck. Didn't waste too much time.
+  - https://github.com/salihmarangoz/DirectionalTSDF (fork)
+    - Solved compilation errors. Ready to run. See commits for more.
+    - Run looks good but the implementation is too complex. Implementing ROS would be very difficult and time consuming.
+
+- Haven't tried these ones. Only `yak_ros` was promising:
+  - https://github.com/ros-industrial/yak_ros
+  - https://github.com/tum-vision/dvo_slam (8 years old project)
+  - https://github.com/tum-vision/fastfusion (8 years old project)
+  - https://github.com/personalrobotics/kinfu_ros (very similar to https://github.com/Nerei/kinfu_remake)
+
+
+
+
 
 ### 02-Nov-2021
 
