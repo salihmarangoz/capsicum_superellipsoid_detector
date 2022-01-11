@@ -373,9 +373,9 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     return;
   }
 
-
+  
   // Seperate pointclouds to roi & non-roi using color information
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_pc(new pcl::PointCloud<pcl::PointXYZRGB>); /*
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr other_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::ConditionOr<pcl::PointXYZRGB>::Ptr color_cond(new pcl::ConditionOr<pcl::PointXYZRGB>);
   color_cond->addComparison(pcl::PackedHSIComparison<pcl::PointXYZRGB>::ConstPtr (new pcl::PackedHSIComparison<pcl::PointXYZRGB> ("h", pcl::ComparisonOps::LT, -20)));
@@ -394,7 +394,8 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     pcl::PointXYZRGB point(pc_pcl->at(*it));
     roi_pc->push_back(point);
   }
-
+  */
+  roi_pc = pc_pcl;
 
   // Cluster roi pointcloud
   pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>);
@@ -467,6 +468,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     pc_roi_pub.publish(roi_pc2_ros);
   }
 
+  /*
   if (pc_other_pub.getNumSubscribers() > 0 )
   {
     sensor_msgs::PointCloud2::Ptr other_pc2_ros(new sensor_msgs::PointCloud2);
@@ -474,6 +476,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
     other_pc2_ros->header = pc_pcl_tf_ros_header;
     pc_other_pub.publish(other_pc2_ros);
   }
+  */
 
   if (clusters_pub.getNumSubscribers() > 0 )
   {

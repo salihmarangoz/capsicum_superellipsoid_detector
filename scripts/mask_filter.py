@@ -45,7 +45,7 @@ class MaskFilter():
 
         if self.roi_pub.get_num_connections()>0:
             roi_depth_image = np.zeros(depth_image.shape, dtype=np.uint16)
-            roi_depth_image[:,:] = np.nan
+            #roi_depth_image[:,:] = 1 # np.nan
             roi_depth_image[roi_mask] = depth_image[roi_mask]
             roi_msg = self.bridge.cv2_to_imgmsg(roi_depth_image, "passthrough")
             roi_msg.header = depth_msg.header
@@ -54,7 +54,7 @@ class MaskFilter():
         if self.nonroi_pub.get_num_connections()>0:
             nonroi_mask = np.invert(roi_mask.copy())
             nonroi_depth_image = np.zeros(depth_image.shape, dtype=np.uint16)
-            nonroi_depth_image[:,:] = np.nan
+            #nonroi_depth_image[:,:] = 1 # np.nan
             nonroi_depth_image[nonroi_mask] = depth_image[nonroi_mask]
             nonroi_msg = self.bridge.cv2_to_imgmsg(nonroi_depth_image, "passthrough")
             nonroi_msg.header = depth_msg.header

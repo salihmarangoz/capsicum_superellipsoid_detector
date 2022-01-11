@@ -86,6 +86,14 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 
 
+### 11-Jan-2022
+
+- see `launch/start_all.launch` for the file I am using currently.
+
+- [will be added]
+
+
+
 ### 17-Dec-2021
 
 ![Screenshot from 2021-12-17 00-15-41](imgs/7_voxblox/Screenshot from 2021-12-17 00-15-41.png)
