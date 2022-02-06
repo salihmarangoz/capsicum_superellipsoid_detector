@@ -34,10 +34,14 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_sensor_msgs
   visualization_msgs
+  octomap_ros
+  octomap_msgs
+  octomap_vpp
 )
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
+find_package(octomap REQUIRED)
 find_package(PCL REQUIRED)
 find_package(Ceres REQUIRED)
 
@@ -134,7 +138,7 @@ catkin_package(
 #   INCLUDE_DIRS include
    LIBRARIES ${PROJECT_NAME}
    CATKIN_DEPENDS ${CATKIN_DEPENDENCIES}
-   DEPENDS PCL
+   DEPENDS OCTOMAP PCL
 )
 
 ###########
@@ -178,6 +182,7 @@ add_dependencies(detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 target_link_libraries(detector_node
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
+  ${OCTOMAP_LIBRARIES}
 )
 
 #############

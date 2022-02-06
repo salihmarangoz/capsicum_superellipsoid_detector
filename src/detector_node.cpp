@@ -13,6 +13,16 @@
 #include <pcl/segmentation/region_growing.h>
 #include <pcl/segmentation/extract_clusters.h>
 
+#include <octomap/AbstractOcTree.h>
+#include <octomap_msgs/Octomap.h>
+#include <octomap_ros/conversions.h>
+#include <octomap_msgs/conversions.h>
+#include <octomap/OcTree.h>
+#include <octomap_vpp/CountingOcTree.h>
+#include <octomap_vpp/NearestRegionOcTree.h>
+#include <octomap_vpp/octomap_pcl.h>
+#include <pcl/point_cloud.h>
+
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
 
@@ -23,7 +33,7 @@ using ceres::Solve;
 using ceres::Solver;
 
 // globals
-ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub, superellipsoid_pub;
+ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub, superellipsoid_pub, test_pub;
 std::unique_ptr<tf::TransformListener> listener;
 
 
@@ -347,12 +357,37 @@ pcl::PointXYZ estimateClusterCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, f
   return pcl::PointXYZ(cp_(0,0), cp_(0,1), cp_(0,2));
 }
 
+// test
+//std::shared_ptr<octomap_vpp::CountingOcTree> computeSuperellipsoidOcTree()
+void computeSuperellipsoidOcTree()
+{
+  
+  float resolution = 0.05;
+  std::shared_ptr<octomap_vpp::CountingOcTree> indexed_fruit_tree(new octomap_vpp::CountingOcTree(resolution));
+
+  for (int i=0; i<20; i++)
+  {
+    octomap::point3d loc(0.2+i/20.0, 0.2+i/5.0, 0.3);
+    indexed_fruit_tree->setNodeCount(loc, i/5);
+  }
+  
+  octomap_msgs::Octomap map_msg;
+  map_msg.header.frame_id = "world";
+  map_msg.header.stamp = ros::Time::now();
+  bool msg_generated = octomap_msgs::fullMapToMsg(*indexed_fruit_tree, map_msg);
+  if (msg_generated)
+  {
+    test_pub.publish(map_msg);
+  }
+
+}
 
 // ======================================================================================================================================
-void pcCallback(const sensor_msgs::PointCloud2Ptr& pc_ros)
+void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
 {
   ROS_INFO_ONCE("Pointcloud received...");
 
+  computeSuperellipsoidOcTree();
 
   // Convert to PCL Pointcloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -521,6 +556,8 @@ int main(int argc, char **argv)
   centers_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("centers_out", 2);
   vis_pub = priv_nh.advertise<visualization_msgs::Marker>( "visualization_marker", 2);
   superellipsoid_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoid_out", 2);
+
+  test_pub = priv_nh.advertise<octomap_msgs::Octomap>("counting_octree", 2);
 
   ros::Subscriber pc_sub = nh.subscribe("pc_in", 1, pcCallback);
 

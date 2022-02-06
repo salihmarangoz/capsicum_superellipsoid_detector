@@ -7,7 +7,7 @@
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="salih@todo.todo">salih</maintainer>
+  <maintainer email="salih285@gmail.com">Salih Marangoz</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -49,42 +49,23 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>message_filters</build_depend>
-  <build_depend>pcl_ros</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>tf2_eigen</build_depend>
-  <build_depend>tf2_geometry_msgs</build_depend>
-  <build_depend>tf2_ros</build_depend>
-  <build_depend>tf2_sensor_msgs</build_depend>
-  <build_depend>visualization_msgs</build_depend>
-  <build_export_depend>geometry_msgs</build_export_depend>
-  <build_export_depend>message_filters</build_export_depend>
-  <build_export_depend>pcl_ros</build_export_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>sensor_msgs</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  <build_export_depend>tf2_eigen</build_export_depend>
-  <build_export_depend>tf2_geometry_msgs</build_export_depend>
-  <build_export_depend>tf2_ros</build_export_depend>
-  <build_export_depend>tf2_sensor_msgs</build_export_depend>
-  <build_export_depend>visualization_msgs</build_export_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>message_filters</exec_depend>
-  <exec_depend>pcl_ros</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>tf2_eigen</exec_depend>
-  <exec_depend>tf2_geometry_msgs</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
-  <exec_depend>tf2_sensor_msgs</exec_depend>
-  <exec_depend>visualization_msgs</exec_depend>
+
+  <depend>geometry_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>pcl_ros</depend>
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>octomap</depend>
+  <depend>octomap_ros</depend>
+  <depend>octomap_msgs</depend>
+  <depend>octomap_vpp</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
