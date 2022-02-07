@@ -1,3 +1,7 @@
+
+#include "capsicum_superellipsoid_detector/superellipsoid.h"
+#include "capsicum_superellipsoid_detector/clustering.h"
+
 #include <ros/ros.h>
 //#include <message_filters/subscriber.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -7,11 +11,6 @@
 #include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf/transform_listener.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/search/search.h>
-#include <pcl/search/kdtree.h>
-#include <pcl/segmentation/region_growing.h>
-#include <pcl/segmentation/extract_clusters.h>
 
 #include <octomap/AbstractOcTree.h>
 #include <octomap_msgs/Octomap.h>
@@ -23,384 +22,30 @@
 #include <octomap_vpp/octomap_pcl.h>
 #include <pcl/point_cloud.h>
 
-#include "ceres/ceres.h"
-#include "ceres/rotation.h"
-
-using ceres::AutoDiffCostFunction;
-using ceres::CostFunction;
-using ceres::Problem;
-using ceres::Solve;
-using ceres::Solver;
 
 // globals
-ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_pub, vis_pub, superellipsoid_pub, test_pub;
+ros::Publisher pc_roi_pub, pc_other_pub, clusters_pub, centers_prior_pub, centers_optimized_pub, vis_pub, superellipsoids_surface_pub, superellipsoids_volume_pub, superellipsoids_volume_octomap_pub;
 std::unique_ptr<tf::TransformListener> listener;
 
 
-#define SIGNUM(x) ((x)>0?+1.:-1.)
-
-double c_func(double w, double m)
-{
-  return SIGNUM(cos(w)) * pow(abs(cos(w)), m);
-}
-
-double s_func(double w, double m)
-{
-  return SIGNUM(sin(w)) * pow(abs(sin(w)), m);
-}
-
-
-#define c_func_(w,m) (cos(w)/abs(cos(w)) * pow(abs(cos(w)), m))
-#define s_func_(w,m) (cos(w)/abs(sin(w)) * pow(abs(sin(w)), m))
-
-struct SuperellipsoidError {
-  SuperellipsoidError(double x_, double y_, double z_, double *priors_)
-      : x(x_), y(y_), z(z_), priors(priors_) {}
-
-  template <typename T> bool operator()(const T* const parameters,
-                                        T* residual) const {
-    const T a = parameters[0];
-    const T b = parameters[1];
-    const T c = parameters[2];
-    const T e1 = parameters[3];
-    const T e2 = parameters[4];
-    const T tx = parameters[5];
-    const T ty = parameters[6];
-    const T tz = parameters[7];
-    const T roll = parameters[8];
-    const T pitch = parameters[9];
-    const T yaw = parameters[10];
-
-    const double prior_tx = priors[0];
-    const double prior_ty = priors[1];
-    const double prior_tz = priors[2];
-
-    // translation
-    auto x_ = x - tx;
-    auto y_ = y - ty;
-    auto z_ = z - tz;
-
-    // rotation
-    const T angles[3] = {-roll, -pitch, -yaw};
-    T rotation_matrix[9];
-    ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
-    auto rotation_matrix_ = Eigen::Matrix<T,3,3>(rotation_matrix);
-
-    Eigen::Matrix<T, 3, 1> point {x_,y_,z_};
-
-    auto point_ = rotation_matrix_ * point;
-
-    const T x__ = point_[0];
-    const T y__ = point_[1];
-    const T z__ = point_[2];
-
-    // loss
-    const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
-    residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
-    //residual[0] = f1 - 1.;
-
-    // EXPERIMENTAL !!!!
-    // regularization via prior
-    // adding 0.001 makes sqrt safer!
-    const double C = 0.1;
-    residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
-    const double D = 0.1;
-    residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
-
-    // EXPERIMENTAL
-    //residual[0] = f1-1.0;
-
-    /* EXPERIMENTAL
-    auto u = atan2(y,x);
-    auto v = 2.*asin(z);
-    auto r = 2./e2;
-    auto t = 2./e1;
-    auto x___ = a * c_func_(v, 2./t) * c_func_(u, 2./r);
-    auto y___ = b * c_func_(v, 2./t) * s_func_(u, 2./r);
-    auto z___ = c * s_func_(v, 2./t);
-    const double C = 0.1;
-    residual[1] = (abs(x__)-x___)*C ;
-    residual[2] = (abs(y__)-y___)*C ;
-    residual[3] = (abs(z__)-z___)*C ;
-    */
-
-    return true;
-  }
-
-  // Factory to hide the construction of the CostFunction object from
-  // the client code.
-  static ceres::CostFunction* Create(const double x,
-                                     const double y,
-                                     const double z,
-                                     double* const priors) {
-    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 3, 11>( // residual_size, parameters_size
-        new SuperellipsoidError(x, y, z, priors)));
-  }
-
- private:
-  const double x;
-  const double y;
-  const double z;
-  const double *priors;
-};
-
-
-
-boost::shared_ptr<std::vector<double>> fitSuperellipsoid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, pcl::PointXYZ center_prior)
-{
-  auto parameters_ptr = boost::make_shared<std::vector<double>>();
-  parameters_ptr->resize(32);
-  auto parameters = (*parameters_ptr).data();
-
-  auto priors_ptr = boost::make_shared<std::vector<double>>();
-  priors_ptr->resize(32);
-  auto priors = (*priors_ptr).data();
-
-  parameters[0] = 0.03; // a
-  parameters[1] = 0.03; // b
-  parameters[2] = 0.03; // c
-  parameters[3] = 0.3; // e1
-  parameters[4] = 0.3; // e2
-  parameters[5] = center_prior._PointXYZ::x; // tx
-  parameters[6] = center_prior._PointXYZ::y; // ty
-  parameters[7] = center_prior._PointXYZ::z; // tz
-  parameters[8] = 0.0; // roll
-  parameters[9] = 0.0; // pitch
-  parameters[10] = 0.0; //yaw
-
-  priors[0] = center_prior._PointXYZ::x; // tx
-  priors[1] = center_prior._PointXYZ::y; // ty
-  priors[2] = center_prior._PointXYZ::z; // tz
-
-  Problem problem;
-  for (size_t i=0; i<pc->size(); i++) {
-    auto point_ = pc->at(i).getVector3fMap();
-    CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors);
-    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
-    problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
-  }
-
-  // lower/upper bounds
-  problem.SetParameterLowerBound(parameters, 0, 0.02); problem.SetParameterUpperBound(parameters, 0, 0.07); // a
-  problem.SetParameterLowerBound(parameters, 1, 0.02); problem.SetParameterUpperBound(parameters, 1, 0.07); // b
-  problem.SetParameterLowerBound(parameters, 2, 0.02); problem.SetParameterUpperBound(parameters, 2, 0.07); // c
-  problem.SetParameterLowerBound(parameters, 3, 0.3); problem.SetParameterUpperBound(parameters, 3, 0.9); // e1
-  problem.SetParameterLowerBound(parameters, 4, 0.3); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
-
-  Solver::Options options;
-  options.max_num_iterations = 100; // todo
-  options.num_threads = 2; // can be good with SMT
-  options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-  options.minimizer_progress_to_stdout = true;
-  //options.check_gradients = true;
-
-  Solver::Summary summary;
-  Solve(options, &problem, &summary);
-  std::cout << summary.BriefReport() << "\n";
-  //std::cout << summary.FullReport() << "\n";
-
-  ROS_FATAL("%f %f %f", parameters[8], parameters[9], parameters[10]);
-
-  if (summary.IsSolutionUsable())
-    return parameters_ptr;
-  return nullptr;
-}
-
-
-void samplePointsSuperellipsoid(std::vector<double> parameters, pcl::PointCloud<pcl::PointXYZ>::Ptr pc_visualization_output)
-{
-    // https://en.wikipedia.org/wiki/Superellipsoid
-    double a_ = parameters[0];
-    double b_ = parameters[1];
-    double c_ = parameters[2];
-    double e1_ = parameters[3];
-    double e2_ = parameters[4];
-    double tx_ = parameters[5];
-    double ty_ = parameters[6];
-    double tz_ = parameters[7];
-    double roll_ = parameters[8];
-    double pitch_ = parameters[9];
-    double yaw_ = parameters[10];
-
-
-    // rotation
-    double angles[3] = {roll_, pitch_, yaw_};
-    double rotation_matrix[9];
-    ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
-    auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<double,3,3> >(rotation_matrix);
-
-    for (double uu=-M_PI; uu<M_PI; uu+=0.05)
-    {
-      for (double vv=-M_PI/2; vv<M_PI/2; vv+=0.05)
-      {
-        double r = 2./e2_;
-        double t = 2./e1_;
-
-        double x = a_ * c_func(vv, 2./t) * c_func(uu, 2./r);
-        double y = b_ * c_func(vv, 2./t) * s_func(uu, 2./r);
-        double z = c_ * s_func(vv, 2./t);
-
-        Eigen::Matrix<double, 3, 1> point {x,y,z};
-        auto point_ = rotation_matrix_ * point;
-
-        x = point_[0] + tx_;
-        y = point_[1] + ty_;
-        z = point_[2] + tz_;
-
-        pcl::PointXYZ point__;
-        point__.x = x;
-        point__.y = y;
-        point__.z = z;
-        pc_visualization_output->push_back(point__);
-      }
-    }
-}
-
-
-
-// copied & modified: https://pointclouds.org/documentation/region__growing_8hpp_source.html
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr getColoredCloud (pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_, std::vector<pcl::PointIndices> &clusters_)
-{
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud;
-
-  if (!clusters_.empty ())
-  {
-    colored_cloud = (new pcl::PointCloud<pcl::PointXYZRGB>)->makeShared ();
-
-    srand (static_cast<unsigned int> (time (nullptr)));
-    std::vector<unsigned char> colors;
-    for (std::size_t i_segment = 0; i_segment < clusters_.size (); i_segment++)
-    {
-      colors.push_back (static_cast<unsigned char> (rand () % 256));
-      colors.push_back (static_cast<unsigned char> (rand () % 256));
-      colors.push_back (static_cast<unsigned char> (rand () % 256));
-    }
-
-    colored_cloud->width = input_->width;
-    colored_cloud->height = input_->height;
-    colored_cloud->is_dense = input_->is_dense;
-    for (const auto& i_point: *input_)
-    {
-      pcl::PointXYZRGB point;
-      point.x = *(i_point.data);
-      point.y = *(i_point.data + 1);
-      point.z = *(i_point.data + 2);
-      point.r = 255;
-      point.g = 0;
-      point.b = 0;
-      colored_cloud->points.push_back (point);
-    }
-
-    int next_color = 0;
-    for (const auto& i_segment : clusters_)
-    {
-      for (const auto& index : (i_segment.indices))
-      {
-        (*colored_cloud)[index].r = colors[3 * next_color];
-        (*colored_cloud)[index].g = colors[3 * next_color + 1];
-        (*colored_cloud)[index].b = colors[3 * next_color + 2];
-      }
-      next_color++;
-    }
-  }
-
-  return (colored_cloud);
-}
-
-pcl::PointXYZ estimateClusterCenter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc, float search_radius=0.03, float regularization=2.5)
-{
-  // Estimate Normals
-  // TODO: This would be faster, maybe: Randomly sample some points or apply clustering then estimate normals
-  // Currently using all points
-  pcl::PointCloud<pcl::Normal>::Ptr pc_normals (new pcl::PointCloud<pcl::Normal>);
-  pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
-  pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB> ());
-  ne.setSearchMethod(tree);
-  ne.setInputCloud(pc);
-  ne.setRadiusSearch (search_radius); // Use all neighbors in a sphere of radius 3cm
-  ne.compute (*pc_normals);
-
-  Eigen::MatrixXf R_mat(3,3);
-  R_mat.setZero();
-  Eigen::MatrixXf Q_mat(3,1);
-  Q_mat.setZero();
-  auto eye3 = Eigen::MatrixXf::Identity(3, 3);
-  Eigen::MatrixXf cluster_mean(3,1);
-  cluster_mean.setZero();
-
-  for (size_t i=0; i<pc_normals->size(); i++)
-  {
-    auto normal_ = pc_normals->at(i);
-    auto point_ = pc->at(i);
-
-    Eigen::MatrixXf v(3,1);
-    v << normal_.getNormalVector3fMap().x(), normal_.getNormalVector3fMap().y(), normal_.getNormalVector3fMap().z();
-
-    Eigen::MatrixXf a(3,1);
-    a << point_.getVector3fMap().x(), point_.getVector3fMap().y(), point_.getVector3fMap().z();
-
-    R_mat += (eye3 - v * v.transpose());
-    Q_mat += ((eye3 - (v * v.transpose() ) ) * a);
-
-    cluster_mean += a;
-  }
-
-  cluster_mean = cluster_mean / pc_normals->size();
-
-  // experimental regularization
-  R_mat += regularization * eye3;
-  Q_mat += + regularization * cluster_mean;
-
-  auto R_dec = R_mat.completeOrthogonalDecomposition();
-  auto R_inv = R_dec.pseudoInverse();
-  auto cp_ = (R_inv * Q_mat).transpose();
-  return pcl::PointXYZ(cp_(0,0), cp_(0,1), cp_(0,2));
-}
-
-// test
-//std::shared_ptr<octomap_vpp::CountingOcTree> computeSuperellipsoidOcTree()
-void computeSuperellipsoidOcTree()
-{
-  
-  float resolution = 0.05;
-  std::shared_ptr<octomap_vpp::CountingOcTree> indexed_fruit_tree(new octomap_vpp::CountingOcTree(resolution));
-
-  for (int i=0; i<20; i++)
-  {
-    octomap::point3d loc(0.2+i/20.0, 0.2+i/5.0, 0.3);
-    indexed_fruit_tree->setNodeCount(loc, i/5);
-  }
-  
-  octomap_msgs::Octomap map_msg;
-  map_msg.header.frame_id = "world";
-  map_msg.header.stamp = ros::Time::now();
-  bool msg_generated = octomap_msgs::fullMapToMsg(*indexed_fruit_tree, map_msg);
-  if (msg_generated)
-  {
-    test_pub.publish(map_msg);
-  }
-
-}
-
-// ======================================================================================================================================
 void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
 {
   ROS_INFO_ONCE("Pointcloud received...");
 
-  computeSuperellipsoidOcTree();
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// PREPROCESSING //////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
 
   // Convert to PCL Pointcloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl (new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::fromROSMsg(*pc_ros, *pc_pcl);
 
-
   // Filter NaN Values
   std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
   pcl::removeNaNFromPointCloud(*pc_pcl, *pc_pcl, *indices);
 
-
   // Transform pointcloud to the world frame
-  pcl_ros::transformPointCloud("world", *pc_pcl, *pc_pcl, *listener);
+  pcl_ros::transformPointCloud("world", *pc_pcl, *pc_pcl, *listener); // todo: parametric world_frame
   std_msgs::Header pc_pcl_tf_ros_header = pcl_conversions::fromPCL(pc_pcl->header);
   if (pc_pcl->size() == 0)
   {
@@ -408,135 +53,105 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     return;
   }
 
-  
-  // Seperate pointclouds to roi & non-roi using color information
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr roi_pc(new pcl::PointCloud<pcl::PointXYZRGB>); /*
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr other_pc(new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::ConditionOr<pcl::PointXYZRGB>::Ptr color_cond(new pcl::ConditionOr<pcl::PointXYZRGB>);
-  color_cond->addComparison(pcl::PackedHSIComparison<pcl::PointXYZRGB>::ConstPtr (new pcl::PackedHSIComparison<pcl::PointXYZRGB> ("h", pcl::ComparisonOps::LT, -20)));
-  color_cond->addComparison(pcl::PackedHSIComparison<pcl::PointXYZRGB>::ConstPtr (new pcl::PackedHSIComparison<pcl::PointXYZRGB> ("h", pcl::ComparisonOps::GT, 35)));
-  color_cond->addComparison(pcl::PackedHSIComparison<pcl::PointXYZRGB>::ConstPtr (new pcl::PackedHSIComparison<pcl::PointXYZRGB> ("s", pcl::ComparisonOps::LT, 30)));
-  color_cond->addComparison(pcl::PackedHSIComparison<pcl::PointXYZRGB>::ConstPtr (new pcl::PackedHSIComparison<pcl::PointXYZRGB> ("i", pcl::ComparisonOps::LT, 30)));
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// CLUSTERING /////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
 
-  pcl::ConditionalRemoval<pcl::PointXYZRGB> condrem(true);
-  condrem.setInputCloud(pc_pcl);
-  condrem.setCondition(color_cond);
-  condrem.filter(*other_pc);
-  pcl::IndicesConstPtr removed_indices_ = condrem.getRemovedIndices();
-
-  for (auto it = std::begin(*removed_indices_); it!=std::end(*removed_indices_); ++it)
-  {
-    pcl::PointXYZRGB point(pc_pcl->at(*it));
-    roi_pc->push_back(point);
-  }
-  */
-  roi_pc = pc_pcl;
-
-  // Cluster roi pointcloud
-  pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>);
-  tree->setInputCloud (roi_pc);
+  // Clustering
   std::vector<pcl::PointIndices> cluster_indices;
-  pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
-  ec.setClusterTolerance (0.02);
-  ec.setMinClusterSize (50);
-  ec.setMaxClusterSize (10000);
-  ec.setSearchMethod (tree);
-  ec.setInputCloud (roi_pc);
-  ec.extract (cluster_indices);
+  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, 0.015, 10, 10000);
 
-  // Predict roi centers then fit superellipsoids
-  pcl::PointCloud<pcl::PointXYZ>::Ptr roi_centers (new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr superellipsoids (new pcl::PointCloud<pcl::PointXYZ>);
+  // (TODO) HERE <-- CHECK IF FRUIT SIZE MAKES SENSE. OTHERWISE SPLIT OR DISCARD
 
-  for (const auto& i_segment : cluster_indices)
+  // debug: visualize clusters
+  if (clusters_pub.getNumSubscribers() > 0)
   {
-    // Gather points for a segment
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_tmp_ (new pcl::PointCloud<pcl::PointXYZRGB>);
-    for (const auto& i_point : (i_segment.indices))
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr debug_pc = clustering::getColoredCloud(pc_pcl, cluster_indices);
+    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*debug_pc, *debug_pc_ros);
+    debug_pc_ros->header = pc_pcl_tf_ros_header;
+    clusters_pub.publish(debug_pc_ros);
+  }
+
+  // Initialize superellipsoids
+  std::vector<std::shared_ptr<superellipsoid::Superellipsoid>> superellipsoids;
+  for (const auto& current_cluster_pc : clusters)
+  {
+    auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid>(current_cluster_pc);
+    pcl::PointCloud<pcl::Normal>::Ptr surface_normals = new_superellipsoid->estimateNormals(0.03); // search_radius
+    pcl::PointXYZ estimated_center = new_superellipsoid->estimateClusterCenter(2.5); // regularization
+    superellipsoids.push_back(new_superellipsoid);
+    //ROS_WARN("%d -> %f %f %f", current_cluster_pc->size(), estimated_center.x, estimated_center.y, estimated_center.z);
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// OPTIMIZATION ///////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
+
+  // Optimize Superellipsoids
+  std::vector<std::shared_ptr<superellipsoid::Superellipsoid>> converged_superellipsoids;
+  for (const auto &current_superellipsoid : superellipsoids)
+  {
+    if ( current_superellipsoid->fit(false) ) // if converged
     {
-      pc_tmp_->push_back(roi_pc->at(i_point));
+      converged_superellipsoids.push_back(current_superellipsoid);
     }
+  }
 
-    auto cp_pcl = estimateClusterCenter(pc_tmp_);
-    roi_centers->push_back(cp_pcl);
-
-
-    // fit superellipsoid
-    auto parameters_ptr = fitSuperellipsoid(pc_tmp_, cp_pcl);
-
-    if (parameters_ptr != nullptr)
+  // debug: visualize prior cluster centers for converged superellipsoids
+  if (centers_prior_pub.getNumSubscribers() > 0)
+  {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr prior_centers(new pcl::PointCloud<pcl::PointXYZ>);
+    for (const auto &se : converged_superellipsoids)
     {
-      roi_centers->push_back(pcl::PointXYZ(parameters_ptr->at(5), parameters_ptr->at(6), parameters_ptr->at(7))); // todo
+      prior_centers->push_back(se->getEstimatedCenter());
     }
+    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*prior_centers, *debug_pc_ros);
+    debug_pc_ros->header = pc_pcl_tf_ros_header;
+    centers_prior_pub.publish(debug_pc_ros);
+  }
 
-
-/*  TEST SUPERELLIPSOID
-    auto parameters = (*parameters_ptr).data();
-    parameters[0] = 0.03; // a
-    parameters[1] = 0.03; // b
-    parameters[2] = 0.03; // c
-    parameters[3] = 0.6; // e1
-    parameters[4] = 0.6; // e2
-    parameters[5] = 1.0;
-    parameters[6] = 0.25;
-    parameters[7] = 0.5;
-    parameters[8] = 60.0;  // roll
-    parameters[9] = 0.0; // pitch
-    parameters[10] = 30.0; // yaw
-*/
-
-    // todo: sample superellipsoid -> only visualize if superellipsoid has subscribers
-    if (superellipsoid_pub.getNumSubscribers() > 0)
+  // debug: visualize optimized centers for converged superellipsoids
+  if (centers_optimized_pub.getNumSubscribers() > 0)
+  {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr optimized_centers(new pcl::PointCloud<pcl::PointXYZ>);
+    for (const auto &se : converged_superellipsoids)
     {
-      samplePointsSuperellipsoid(*parameters_ptr, superellipsoids);
+      optimized_centers->push_back(se->getOptimizedCenter());
     }
-
+    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*optimized_centers, *debug_pc_ros);
+    debug_pc_ros->header = pc_pcl_tf_ros_header;
+    centers_optimized_pub.publish(debug_pc_ros);
   }
 
-
-  /////////////////////////////////////////////// VISUALIZATION PART ///////////////////////////////////////////////////////
-  if (pc_roi_pub.getNumSubscribers() > 0 )
+  // debug: visualize converged superellipsoids surface
+  if (superellipsoids_surface_pub.getNumSubscribers() > 0)
   {
-    sensor_msgs::PointCloud2::Ptr roi_pc2_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*roi_pc, *roi_pc2_ros);
-    roi_pc2_ros->header = pc_pcl_tf_ros_header;
-    pc_roi_pub.publish(roi_pc2_ros);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZ>);
+    for (const auto &se : converged_superellipsoids)
+    {
+      *(debug_pc) += *(se->sampleSurface());
+    }
+    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*debug_pc, *debug_pc_ros);
+    debug_pc_ros->header = pc_pcl_tf_ros_header;
+    superellipsoids_surface_pub.publish(debug_pc_ros);
   }
 
-  /*
-  if (pc_other_pub.getNumSubscribers() > 0 )
+  // debug: visualize converged superellipsoids volume
+  if (superellipsoids_volume_pub.getNumSubscribers() > 0)
   {
-    sensor_msgs::PointCloud2::Ptr other_pc2_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*other_pc, *other_pc2_ros);
-    other_pc2_ros->header = pc_pcl_tf_ros_header;
-    pc_other_pub.publish(other_pc2_ros);
-  }
-  */
-
-  if (clusters_pub.getNumSubscribers() > 0 )
-  {
-    pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = getColoredCloud (roi_pc, cluster_indices);
-
-    sensor_msgs::PointCloud2::Ptr debug_pc(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*colored_cloud, *debug_pc);
-    debug_pc->header = pc_pcl_tf_ros_header;
-    clusters_pub.publish(debug_pc);
-  }
-
-  if (superellipsoid_pub.getNumSubscribers() > 0)
-  {
-    sensor_msgs::PointCloud2::Ptr tmp_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*superellipsoids, *tmp_ros);
-    tmp_ros->header = pc_pcl_tf_ros_header;
-    superellipsoid_pub.publish(tmp_ros);
-  }
-
-  if (centers_pub.getNumSubscribers() > 0)
-  {
-    sensor_msgs::PointCloud2::Ptr roi_centers_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*roi_centers, *roi_centers_ros);
-    roi_centers_ros->header = pc_pcl_tf_ros_header;
-    centers_pub.publish(roi_centers_ros);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZ>);
+    for (const auto &se : converged_superellipsoids)
+    {
+      *(debug_pc) += *(se->sampleVolume(0.001)); // todo
+    }
+    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*debug_pc, *debug_pc_ros);
+    debug_pc_ros->header = pc_pcl_tf_ros_header;
+    superellipsoids_volume_pub.publish(debug_pc_ros);
   }
 
   ROS_WARN("Callback finished!");
@@ -550,17 +165,22 @@ int main(int argc, char **argv)
   ros::NodeHandle priv_nh("~");
 
   listener = std::make_unique<tf::TransformListener>();
-  pc_roi_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("pc_roi_out", 2);
-  pc_other_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("pc_other_out", 2);
-  clusters_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("clusters_out", 2);
-  centers_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("centers_out", 2);
-  vis_pub = priv_nh.advertise<visualization_msgs::Marker>( "visualization_marker", 2);
-  superellipsoid_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoid_out", 2);
 
-  test_pub = priv_nh.advertise<octomap_msgs::Octomap>("counting_octree", 2);
+  clusters_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("clusters", 2, true);
+  superellipsoids_surface_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_surface", 2, true);
+  centers_prior_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);
+  centers_optimized_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("centers_optimized", 2, true);
+  superellipsoids_volume_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_volume", 2, true);
+  superellipsoids_volume_octomap_pub = priv_nh.advertise<octomap_msgs::Octomap>("superellipsoids_volume_octomap", 2, true);
+
+  //////////////////////////////
+  //pc_roi_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("pc_roi_out", 2);
+  //pc_other_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("pc_other_out", 2);
+  //vis_pub = priv_nh.advertise<visualization_msgs::Marker>( "visualization_marker", 2);
 
   ros::Subscriber pc_sub = nh.subscribe("pc_in", 1, pcCallback);
 
   ros::spin();
   return 0;
 }
+
