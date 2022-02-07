@@ -85,11 +85,11 @@ bool Superellipsoid::fit(bool log_to_stdout)
   priors_ptr->resize(16);
   auto priors = (*priors_ptr).data();
 
-  parameters[0] = 0.03; // a
-  parameters[1] = 0.03; // b
-  parameters[2] = 0.03; // c
-  parameters[3] = 0.3; // e1
-  parameters[4] = 0.3; // e2
+  parameters[0] = 0.05; // a
+  parameters[1] = 0.05; // b
+  parameters[2] = 0.05; // c
+  parameters[3] = 0.5; // e1
+  parameters[4] = 0.5; // e2
   parameters[5] = estimated_center._PointXYZ::x; // tx
   parameters[6] = estimated_center._PointXYZ::y; // ty
   parameters[7] = estimated_center._PointXYZ::z; // tz
@@ -352,30 +352,10 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 /*
 
 // test
-//std::shared_ptr<octomap_vpp::CountingOcTree> computeSuperellipsoidOcTree()
-void computeSuperellipsoidOcTree()
-{
-  
-  float resolution = 0.05;
-  std::shared_ptr<octomap_vpp::CountingOcTree> indexed_fruit_tree(new octomap_vpp::CountingOcTree(resolution));
 
-  for (int i=0; i<20; i++)
-  {
-    octomap::point3d loc(0.2+i/20.0, 0.2+i/5.0, 0.3);
-    indexed_fruit_tree->setNodeCount(loc, i/5);
-  }
-  
-  octomap_msgs::Octomap map_msg;
-  map_msg.header.frame_id = "world";
-  map_msg.header.stamp = ros::Time::now();
-  bool msg_generated = octomap_msgs::fullMapToMsg(*indexed_fruit_tree, map_msg);
-  if (msg_generated)
-  {
-    test_pub.publish(map_msg);
-  }
-
-}
 */
+
+
 
 
 //#define c_func_(w,m) (cos(w)/abs(cos(w)) * pow(abs(cos(w)), m))

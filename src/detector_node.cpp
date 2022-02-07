@@ -59,7 +59,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
 
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices;
-  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, 0.015, 10, 10000);
+  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, 0.015, 100, 10000);
 
   // (TODO) HERE <-- CHECK IF FRUIT SIZE MAKES SENSE. OTHERWISE SPLIT OR DISCARD
 
@@ -79,6 +79,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   {
     auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid>(current_cluster_pc);
     pcl::PointCloud<pcl::Normal>::Ptr surface_normals = new_superellipsoid->estimateNormals(0.03); // search_radius
+
     pcl::PointXYZ estimated_center = new_superellipsoid->estimateClusterCenter(2.5); // regularization
     superellipsoids.push_back(new_superellipsoid);
     //ROS_WARN("%d -> %f %f %f", current_cluster_pc->size(), estimated_center.x, estimated_center.y, estimated_center.z);
@@ -152,6 +153,32 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     pcl::toROSMsg(*debug_pc, *debug_pc_ros);
     debug_pc_ros->header = pc_pcl_tf_ros_header;
     superellipsoids_volume_pub.publish(debug_pc_ros);
+  }
+
+  // debug: visualize converged superellipsoids volume via octomap_vpp and include cluster idx information
+  if (superellipsoids_volume_octomap_pub.getNumSubscribers() > 0)
+  {
+    std::shared_ptr<octomap_vpp::CountingOcTree> countingoctree(new octomap_vpp::CountingOcTree(0.005)); // todo
+
+    int cluster_idx = 0;
+    for (const auto &se : converged_superellipsoids)
+    {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr volume_pc = se->sampleVolume(0.001); // todo
+
+      for (const auto &p : *volume_pc)
+      {
+        octomap::point3d loc(p.x, p.y, p.z);
+        countingoctree->setNodeCount(loc, cluster_idx);
+      }
+
+      cluster_idx++;
+    }
+
+    std::shared_ptr<octomap_msgs::Octomap> debug_octomap(new octomap_msgs::Octomap());
+    debug_octomap->header.frame_id = "world";
+    debug_octomap->header.stamp = ros::Time::now();
+    octomap_msgs::fullMapToMsg(*countingoctree, *debug_octomap);
+    superellipsoids_volume_octomap_pub.publish(*debug_octomap);
   }
 
   ROS_WARN("Callback finished!");
