@@ -25,6 +25,7 @@ Superellipsoid::estimateNormals(float search_radius)
   ne.setInputCloud(cloud_in);
   ne.setRadiusSearch (search_radius); // Use all neighbors in a sphere of radius 3cm (0.03f) might be a good value
   normals_in->points.reserve(cloud_in->points.size());
+  ne.setViewPoint(estimated_center.x, estimated_center.y, estimated_center.z);
   ne.compute (*normals_in);
   return normals_in;
 }
@@ -105,8 +106,8 @@ bool Superellipsoid::fit(bool log_to_stdout)
   for (size_t i=0; i<cloud_in->size(); i++) {
     auto point_ = cloud_in->at(i).getVector3fMap();
     CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors);
-    problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
-    //problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
+    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
+    problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
 
   // lower/upper bounds
@@ -267,6 +268,18 @@ pcl::PointXYZ
 Superellipsoid::getEstimatedCenter()
 {
   return estimated_center;
+}
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
+Superellipsoid::getCloud()
+{
+  return cloud_in;
+}
+
+pcl::PointCloud<pcl::Normal>::Ptr 
+Superellipsoid::getNormals()
+{
+  return normals_in;
 }
 
 

@@ -36,13 +36,14 @@ public:
   pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution);
   pcl::PointXYZ getOptimizedCenter();
   pcl::PointXYZ getEstimatedCenter();
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCloud();
+  pcl::PointCloud<pcl::Normal>::Ptr getNormals();
 
   bool fit(bool log_to_stdout);
   std::map<std::string, double> getParameters();
 
   double c_func(double w, double m);
   double s_func(double w, double m);
-
 
   //void generateSuperellipsoidVolume();
 

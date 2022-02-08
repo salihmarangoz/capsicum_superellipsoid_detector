@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /XYZ + Label + Normals1
       Splitter Ratio: 0.5
     Tree Height: 1228
   - Class: rviz/Selection
@@ -25,7 +26,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 1
-    SyncSource: Clusters
+    SyncSource: Centers (Prior)
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -160,7 +161,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -172,6 +173,34 @@ Visualization Manager:
       Size (m): 0.004999999888241291
       Style: Spheres
       Topic: /capsicum_superellipsoid_detector/clusters
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 0.6060000061988831
+        Min Value: 0.26600000262260437
+        Value: true
+      Axis: Z
+      Channel Name: normal_z
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: XYZ + Label + Normals
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.004999999888241291
+      Style: Spheres
+      Topic: /capsicum_superellipsoid_detector/xyz_label_normal
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -232,6 +261,14 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /capsicum_superellipsoid_detector/surface_normals_marker
+      Name: Surface Normals
+      Namespaces:
+        surface_normals_marker: true
+      Queue Size: 100
+      Value: true
     - Class: octomap_vpp_rviz_plugin/CountingOcTreeDisplay
       Enabled: false
       Max color: 300
@@ -353,7 +390,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.5699170827865601
+      Distance: 0.4047033488750458
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -361,17 +398,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.08708420395851135
-        Y: 0.6118572354316711
-        Z: 0.42507869005203247
+        X: 0.09680421650409698
+        Y: 0.5799053907394409
+        Z: 0.4580802321434021
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.29479774832725525
+      Pitch: 0.22979645431041718
       Target Frame: <Fixed Frame>
-      Yaw: 0.037795402109622955
+      Yaw: 4.97147798538208
     Saved: ~
 Window Geometry:
   Displays:
