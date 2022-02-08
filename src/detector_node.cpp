@@ -67,8 +67,8 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
 
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices;
-  //std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, 0.015, 100, 10000);
-  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::experimentalClustering(pc_pcl, cluster_indices);
+  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, 0.015, 100, 10000);
+  //std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::experimentalClustering(pc_pcl, cluster_indices);
 
   // (TODO) HERE <-- CHECK IF FRUIT SIZE MAKES SENSE. OTHERWISE SPLIT OR DISCARD
 
