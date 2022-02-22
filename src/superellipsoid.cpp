@@ -73,6 +73,12 @@ Superellipsoid::estimateClusterCenter(float regularization)
   auto cp_ = (R_inv * Q_mat).transpose();
 
   estimated_center = pcl::PointXYZ(cp_(0,0), cp_(0,1), cp_(0,2));
+
+  if (std::isnan(estimated_center.x) || std::isnan(estimated_center.y) || std::isnan(estimated_center.z))
+  {
+    estimated_center = pcl::PointXYZ(cluster_mean(0,0), cluster_mean(1,0), cluster_mean(2,0));
+    fprintf(stderr, "Center prediction with normals failed. Using cluster mean instead...\n");
+  }
   return estimated_center;
 }
 
@@ -111,9 +117,9 @@ bool Superellipsoid::fit(bool log_to_stdout)
   }
 
   // lower/upper bounds
-  problem.SetParameterLowerBound(parameters, 0, 0.02); problem.SetParameterUpperBound(parameters, 0, 0.07); // a
-  problem.SetParameterLowerBound(parameters, 1, 0.02); problem.SetParameterUpperBound(parameters, 1, 0.07); // b
-  problem.SetParameterLowerBound(parameters, 2, 0.02); problem.SetParameterUpperBound(parameters, 2, 0.07); // c
+  problem.SetParameterLowerBound(parameters, 0, 0.02); problem.SetParameterUpperBound(parameters, 0, 0.15); // a
+  problem.SetParameterLowerBound(parameters, 1, 0.02); problem.SetParameterUpperBound(parameters, 1, 0.15); // b
+  problem.SetParameterLowerBound(parameters, 2, 0.02); problem.SetParameterUpperBound(parameters, 2, 0.15); // c
   problem.SetParameterLowerBound(parameters, 3, 0.3); problem.SetParameterUpperBound(parameters, 3, 0.9); // e1
   problem.SetParameterLowerBound(parameters, 4, 0.3); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
 
@@ -326,21 +332,20 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 
   // loss
   const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
-  residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
-  //residual[0] = f1 - 1.;
+  //residual[0] = f1 - 1.; // doesn't fit well
+  //residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.); // cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+  residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.)); // Experimental: cost function based on distance to the surface mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
 
   // EXPERIMENTAL !!!!
   // regularization via prior
-  // adding 0.001 makes sqrt safer!
+  /*
   const double C = 0.1;
   residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
   const double D = 0.1;
   residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
+  */
 
-  // EXPERIMENTAL
-  //residual[0] = f1-1.0;
-
-  /* EXPERIMENTAL
+  /* EXPERIMENTAL (try to fit surface normals... FAILED. I NEED TO CHECK THE LITERATURE AGAIN. MAYBE HERE: https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
   auto u = atan2(y,x);
   auto v = 2.*asin(z);
   auto r = 2./e2;
@@ -359,17 +364,3 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 
 
 } // namespace
-
-
-
-/*
-
-// test
-
-*/
-
-
-
-
-//#define c_func_(w,m) (cos(w)/abs(cos(w)) * pow(abs(cos(w)), m))
-//#define s_func_(w,m) (cos(w)/abs(sin(w)) * pow(abs(sin(w)), m))

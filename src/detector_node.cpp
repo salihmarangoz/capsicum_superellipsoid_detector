@@ -114,6 +114,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     for (const auto &se : converged_superellipsoids)
     {
       prior_centers->push_back(se->getEstimatedCenter());
+      //ROS_INFO("%f %f %f", se->getEstimatedCenter().x, se->getEstimatedCenter().y, se->getEstimatedCenter().z);
     }
     sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*prior_centers, *debug_pc_ros);

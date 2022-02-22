@@ -66,7 +66,7 @@ struct SuperellipsoidError {
                                      const double y,
                                      const double z,
                                      double* const priors) {
-    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 3, 11>( // residual_size, parameters_size
+    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 1, 11>( // residual_size, parameters_size
         new SuperellipsoidError(x, y, z, priors)));
   }
 
