@@ -4,6 +4,13 @@ Note: Some notes are missing.
 
 
 
+### 02-Mar-2022
+
+- I have cleaned and exported `capsicum_plant_4` . It can be found in sciebo `salih_shared_files` folder. I have tested it with Gazebo and Rviz, everything seems ok.
+- For the all steps I have prepared a youtube playlist: https://www.youtube.com/playlist?list=PLqiYY_Ff0Mui6EriaXwRA3RTmOL6kai09 (I have also uploaded them to sciebo but youtube side is better with descriptions).
+
+
+
 ### 22-Feb-2022
 
 - Updated readme: 
