@@ -98,8 +98,8 @@ Superellipsoid<PointT>::Superellipsoid(typename pcl::PointCloud<PointT>::Ptr clo
 template <typename PointT>
 pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius)
 {
-  pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
-  pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB> ());
+  pcl::NormalEstimation<PointT, pcl::Normal> ne;
+  typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT> ());
   ne.setSearchMethod(tree);
   ne.setInputCloud(cloud_in);
   ne.setRadiusSearch (search_radius); // Use all neighbors in a sphere of radius 3cm (0.03f) might be a good value
