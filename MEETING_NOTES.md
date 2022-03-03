@@ -4,6 +4,19 @@ Note: Some notes are missing.
 
 
 
+### 09-Mar-2022
+
+- Capsicum plant model cleaning notes:
+  - All files are uploaded to Sciebo.
+  - I have processed all plant models from `capsicum_plant_1` to `capsicum_plant_9`
+  - Shell modifier is only applied on leaves and flowers.
+  - Gazebo models include both DAE files (all-in-one and fruit only models) if there is at least one fruit with these naming conventions: `VG07_X_clean.dae` ,` VG07_X_fruitonly.dae`
+  - For all exported DAE files related 3DS models are also available.
+
+<img src="imgs/cleaned_gazebo_and_3dsmax_models_screenshot.png" alt="cleaned_gazebo_and_3dsmax_models_screenshot" style="zoom: 33%;" />
+
+
+
 ### 02-Mar-2022
 
 - I have cleaned and exported `capsicum_plant_4` . It can be found in sciebo `salih_shared_files` folder. I have tested it with Gazebo and Rviz, everything seems ok.
