@@ -83,10 +83,10 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   }
 
   // Initialize superellipsoids
-  std::vector<std::shared_ptr<superellipsoid::Superellipsoid>> superellipsoids;
+  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> superellipsoids;
   for (const auto& current_cluster_pc : clusters)
   {
-    auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid>(current_cluster_pc);
+    auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>(current_cluster_pc);
     new_superellipsoid->estimateNormals(0.015); // search_radius
     new_superellipsoid->estimateClusterCenter(2.5); // regularization
     new_superellipsoid->estimateNormals(0.015);      // CALL AGAIN TO COMPUTE NORMALS W.R.T. ESTIMATED CLUSTER CENTER VIEWPOINT
@@ -98,7 +98,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   /////////////////////////////////////////////////////////////////////////////////////////////
 
   // Optimize Superellipsoids
-  std::vector<std::shared_ptr<superellipsoid::Superellipsoid>> converged_superellipsoids;
+  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> converged_superellipsoids;
   for (const auto &current_superellipsoid : superellipsoids)
   {
     if ( current_superellipsoid->fit(true) ) // print ceres summary
