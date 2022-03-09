@@ -13,6 +13,8 @@
 #include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf/transform_listener.h>
+#include <superellipsoid_msgs/Superellipsoid.h>
+#include <superellipsoid_msgs/SuperellipsoidArray.h>
 
 #include <octomap/AbstractOcTree.h>
 #include <octomap_msgs/Octomap.h>
@@ -25,7 +27,8 @@
 #include <pcl/point_cloud.h>
 
 // globals
-ros::Publisher clusters_pub,
+ros::Publisher superellipsoids_pub,
+    clusters_pub,
     centers_prior_pub,
     centers_optimized_pub,
     superellipsoids_surface_pub,
@@ -105,6 +108,20 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     { // if converged
       converged_superellipsoids.push_back(current_superellipsoid);
     }
+  }
+
+  // debug: publish superellipsoids for converged superellipsoids
+  if (superellipsoids_pub.getNumSubscribers() > 0)
+  {
+    superellipsoid_msgs::SuperellipsoidArray sea;
+    sea.header = pc_pcl_tf_ros_header;
+    for (const auto &se : converged_superellipsoids)
+    {
+      superellipsoid_msgs::Superellipsoid se_msg = se->generateRosMessage();
+      se_msg.header = pc_pcl_tf_ros_header;
+      sea.superellipsoids.push_back(se_msg);
+    }
+    superellipsoids_pub.publish(sea);
   }
 
   // debug: visualize prior cluster centers for converged superellipsoids
@@ -293,6 +310,7 @@ int main(int argc, char **argv)
 
   listener = std::make_unique<tf::TransformListener>();
 
+  superellipsoids_pub = priv_nh.advertise<superellipsoid_msgs::SuperellipsoidArray>("superellipsoids", 2, true);
   clusters_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("clusters", 2, true);
   superellipsoids_surface_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_surface", 2, true);
   centers_prior_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);

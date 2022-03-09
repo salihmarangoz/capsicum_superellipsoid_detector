@@ -15,7 +15,47 @@ Note: Some notes are missing.
 
 <img src="imgs/cleaned_gazebo_and_3dsmax_models_screenshot.png" alt="cleaned_gazebo_and_3dsmax_models_screenshot" style="zoom: 33%;" />
 
+- Merged `templated_superellipsoid`. Thanks to Tobias!
+- Created a new repository `superellipsoid_msgs` here: https://gitlab.igg.uni-bonn.de/hrl_students/salih-marangoz-hiwi/superellipsoid_msgs
+- Added a missing published topic in `ROS Topics, Transforms, and Services` in README.
+- Now Superellipsoid class can be initialized with superellipsoid_msgs::Superellipsoid, so sampleSurface, sampleVolume, etc. methods can be used (except the ones related to pointcloud processing)
+- The detector node now published `~superellipsoids` topic with the ROS message type `superellipsoid_msgs::SuperellipsoidArray` which includes Superellipsoid implicit parameters (a,b,c,e1,e2), translation/rotation (tx,ty,tz,roll,pitch,yaw), and volume (in cubic meter). Example rostopic echo output: (note: stamps are zero because of `simulate_depth_noise.py` script I think)
 
+```
+---
+header: 
+  seq: 174
+  stamp: 
+    secs: 0
+    nsecs:         0
+  frame_id: "world"
+superellipsoids: 
+  - 
+    header: 
+      seq: 0
+      stamp: 
+        secs: 0
+        nsecs:         0
+      frame_id: "world"
+    a: 0.07507354110713724
+    b: 0.044208343286729436
+    c: 0.07719025356094733
+    e1: 0.3
+    e2: 0.7963811001135296
+    tx: 0.08293536181492861
+    ty: 0.5913954813711576
+    tz: 0.43861440435466015
+    roll: 14.158259798464618
+    pitch: -12.50883566765269
+    yaw: 74.86105461708858
+    volume: 0.0016399004591913589
+  - 
+    header: 
+      seq: 0
+...
+```
+
+- Transformation for `sampleSurface` and `sampleVolume` is optional now.
 
 ### 02-Mar-2022
 

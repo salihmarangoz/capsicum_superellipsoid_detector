@@ -16,6 +16,8 @@ TODO
 
 ### Dependencies
 
+- superellipsoid_msgs: https://gitlab.igg.uni-bonn.de/hrl_students/salih-marangoz-hiwi/superellipsoid_msgs
+
 - Voxblox (See for more: https://voxblox.readthedocs.io/en/latest/pages/Installation.html)
 
 ```bash
@@ -99,6 +101,9 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 ### Published Topics
 
+- **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
+  - Optimized superellipsoids output. Headers are the same for all superellipsoids.
+
 - **`~clusters`** ("sensor_msgs/PointCloud2")
   - RGBXYZ pointcloud with each cluster has a different RGB color. Colors may be changed between messages for the same clusters. Recommended only for debugging.
 - **`~superellipsoids_surface`** ("sensor_msgs/PointCloud2")
@@ -109,6 +114,9 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
   - XYZ pointcloud for centers computed after the superellipsoid optimization. Centers for failed optimizations will not be published. Recommended only for debugging.
 - **`~superellipsoids_volume`** ("sensor_msgs/PointCloud2")
   - XYZ pointcloud for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. 
+- **`~superellipsoids_volume_octomap`** ("octomap_msgs::Octomap")
+  - XYZ octomap_vpp::CountingOcTree for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. The count value represents cluster index of the superellipsoid.
+
 - **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
   - Arrow markers for visualizing surface normals. Surface normals are computed w.r.t. predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
 - **`~xyz_label_normal`** ("sensor_msgs/PointCloud2")

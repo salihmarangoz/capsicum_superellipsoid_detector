@@ -66,6 +66,7 @@
   <depend>octomap_ros</depend>
   <depend>octomap_msgs</depend>
   <depend>octomap_vpp</depend>
+  <depend>superellipsoid_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

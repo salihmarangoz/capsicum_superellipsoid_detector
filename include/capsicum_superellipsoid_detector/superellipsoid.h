@@ -10,6 +10,11 @@
 #include "ceres/rotation.h"
 #include <pcl/point_cloud.h>
 #include <pcl/features/normal_3d.h>
+#include <boost/math/special_functions/beta.hpp>
+
+#ifndef DISABLE_ROS_SUPERELLIPSOID_H
+#include <superellipsoid_msgs/Superellipsoid.h>
+#endif
 
 #ifndef SIGNUM
 #define SIGNUM(x) ((x)>0?+1.:-1.)
@@ -32,20 +37,26 @@ public:
   Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_in);
   pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius);
   pcl::PointXYZ estimateClusterCenter(float regularization);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface();
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution);
-  pcl::PointXYZ getOptimizedCenter();
   pcl::PointXYZ getEstimatedCenter();
   typename pcl::PointCloud<PointT>::Ptr getCloud();
   pcl::PointCloud<pcl::Normal>::Ptr getNormals();
-
   bool fit(bool log_to_stdout);
-  std::map<std::string, double> getParameters();
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// If you are creating the object with Superellipsoid ROS message then don't use the methods defined above unless specifying "cloud_in"
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ifndef DISABLE_ROS_SUPERELLIPSOID_H
+  Superellipsoid(superellipsoid_msgs::Superellipsoid::ConstPtr se);
+  superellipsoid_msgs::Superellipsoid generateRosMessage();
+#endif
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool apply_transformation=true);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true);
+  pcl::PointXYZ getOptimizedCenter();
+  double computeVolume();
+  std::map<std::string, double> getParameters();
   double c_func(double w, double m);
   double s_func(double w, double m);
-
-  //void generateSuperellipsoidVolume();
 
 private:
   typename pcl::PointCloud<PointT>::Ptr cloud_in;
@@ -93,6 +104,45 @@ Superellipsoid<PointT>::Superellipsoid(typename pcl::PointCloud<PointT>::Ptr clo
   normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
   parameters_ptr = std::make_shared<std::vector<double>>();
 }
+
+#ifndef DISABLE_ROS_SUPERELLIPSOID_H
+template <typename PointT>
+Superellipsoid<PointT>::Superellipsoid(superellipsoid_msgs::Superellipsoid::ConstPtr se)
+{
+  normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
+  parameters_ptr = std::make_shared<std::vector<double>>();
+  (*parameters_ptr)[0] = se->a;
+  (*parameters_ptr)[1] = se->b;
+  (*parameters_ptr)[2] = se->c;
+  (*parameters_ptr)[3] = se->e1;
+  (*parameters_ptr)[4] = se->e2;
+  (*parameters_ptr)[5] = se->tx;
+  (*parameters_ptr)[6] = se->ty;
+  (*parameters_ptr)[7] = se->tz;
+  (*parameters_ptr)[8] = se->roll;
+  (*parameters_ptr)[9] = se->pitch;
+  (*parameters_ptr)[10] = se->yaw;
+}
+
+template <typename PointT>
+superellipsoid_msgs::Superellipsoid Superellipsoid<PointT>::generateRosMessage()
+{
+  superellipsoid_msgs::Superellipsoid se;
+  se.a = (*parameters_ptr)[0];
+  se.b = (*parameters_ptr)[1];
+  se.c = (*parameters_ptr)[2];
+  se.e1 = (*parameters_ptr)[3];
+  se.e2 = (*parameters_ptr)[4];
+  se.tx = (*parameters_ptr)[5];
+  se.ty = (*parameters_ptr)[6];
+  se.tz = (*parameters_ptr)[7];
+  se.roll = (*parameters_ptr)[8];
+  se.pitch = (*parameters_ptr)[9];
+  se.yaw = (*parameters_ptr)[10];
+  se.volume = computeVolume();
+  return se;
+}
+#endif
 
 
 template <typename PointT>
@@ -225,7 +275,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout)
 
 // https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface()
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool apply_transformation/*=true*/)
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
 
@@ -259,13 +309,24 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface()
       double z = c_ * s_func(vv, 2./t);
 
       Eigen::Matrix<double, 3, 1> point {x,y,z};
-      auto point_ = rotation_matrix_ * point;
+      if (apply_transformation)
+      {
+        auto point_ = rotation_matrix_ * point;
+        pcl::PointXYZ point__;
+        point__.x = point_[0] + tx_;
+        point__.y = point_[1] + ty_;
+        point__.z = point_[2] + tz_;
+        output_pc->push_back(point__);
+      }
+      else
+      {
+        pcl::PointXYZ point__;
+        point__.x = point[0];
+        point__.y = point[1];
+        point__.z = point[2];
+        output_pc->push_back(point__);
+      }
 
-      pcl::PointXYZ point__;
-      point__.x = point_[0] + tx_;
-      point__.y = point_[1] + ty_;
-      point__.z = point_[2] + tz_;
-      output_pc->push_back(point__);
     }
   }
   return output_pc;
@@ -274,7 +335,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface()
 
 // https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double resolution)
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double resolution, bool apply_transformation/*=true*/)
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
 
@@ -308,12 +369,24 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double 
         if (pow(pow(abs(xx/a_), r) + pow(abs(yy/b_), r), t/r) + pow(abs(zz/c_), t) <= 1) // the implicit inequality (is the point xx,yy,zz inside of the superellipsoid or not)
         {
           Eigen::Matrix<double, 3, 1> point {xx,yy,zz};
-          auto point_ = rotation_matrix_ * point;
-          pcl::PointXYZ point__;
-          point__.x = point_[0] + tx_;
-          point__.y = point_[1] + ty_;
-          point__.z = point_[2] + tz_;
-          output_pc->push_back(point__);
+          if (apply_transformation)
+          {
+            auto point_ = rotation_matrix_ * point;
+            pcl::PointXYZ point__;
+            point__.x = point_[0] + tx_;
+            point__.y = point_[1] + ty_;
+            point__.z = point_[2] + tz_;
+            output_pc->push_back(point__);
+          }
+          else
+          {
+            pcl::PointXYZ point__;
+            point__.x = point[0];
+            point__.y = point[1];
+            point__.z = point[2];
+            output_pc->push_back(point__);
+          }
+
         }
       }
     }
@@ -369,6 +442,24 @@ template <typename PointT>
 pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::getNormals()
 {
   return normals_in;
+}
+
+
+// ref: https://en.wikipedia.org/wiki/Superellipsoid
+template <typename PointT>
+double Superellipsoid<PointT>::computeVolume()
+{
+  double a = (*parameters_ptr)[0];
+  double b = (*parameters_ptr)[1];
+  double c = (*parameters_ptr)[2];
+  double e1 = (*parameters_ptr)[3];
+  double e2 = (*parameters_ptr)[4];
+
+  //double r = 2./e2;
+  //double t = 2./e1;
+  //return (2./3.) * a * b * c * (4./(r*t)) * boost::math::beta(1/r, 1/r) * boost::math::beta(2/t, 1/t);
+
+  return (2./3.) * a * b * c * e1 * e2 * boost::math::beta(e2/2., e2/2.) * boost::math::beta(e1, e1/2.);
 }
 
 
@@ -451,24 +542,3 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 } // namespace
 #endif // SUPERELLIPSOID_H
 
-
-
-
-/*  TEST SUPERELLIPSOID
-    auto parameters = (*parameters_ptr).data();
-    parameters[0] = 0.03; // a
-    parameters[1] = 0.03; // b
-    parameters[2] = 0.03; // c
-    parameters[3] = 0.6; // e1
-    parameters[4] = 0.6; // e2
-    parameters[5] = 1.0;
-    parameters[6] = 0.25;
-    parameters[7] = 0.5;
-    parameters[8] = 60.0;  // roll
-    parameters[9] = 0.0; // pitch
-    parameters[10] = 30.0; // yaw
-*/
-
-/* ---- TODO -----
-
-*/

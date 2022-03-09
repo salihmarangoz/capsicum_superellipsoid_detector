@@ -37,6 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_ros
   octomap_msgs
   octomap_vpp
+  superellipsoid_msgs
 )
 
 ## System dependencies are found with CMake's conventions
