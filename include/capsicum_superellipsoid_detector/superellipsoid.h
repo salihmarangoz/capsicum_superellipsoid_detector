@@ -46,17 +46,17 @@ public:
 // If you are creating the object with Superellipsoid ROS message then don't use the methods defined above unless specifying "cloud_in"
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifndef DISABLE_ROS_SUPERELLIPSOID_H
-  Superellipsoid(superellipsoid_msgs::Superellipsoid::ConstPtr se);
-  superellipsoid_msgs::Superellipsoid generateRosMessage();
+  Superellipsoid(const superellipsoid_msgs::Superellipsoid &se);
+  superellipsoid_msgs::Superellipsoid generateRosMessage() const;
 #endif
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool apply_transformation=true);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true);
-  pcl::PointXYZ getOptimizedCenter();
-  double computeVolume();
-  std::map<std::string, double> getParameters();
-  double c_func(double w, double m);
-  double s_func(double w, double m);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool apply_transformation=true) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true) const;
+  pcl::PointXYZ getOptimizedCenter() const;
+  double computeVolume() const;
+  std::map<std::string, double> getParameters() const;
+  static double c_func(double w, double m);
+  static double s_func(double w, double m);
 
 private:
   typename pcl::PointCloud<PointT>::Ptr cloud_in;
@@ -90,11 +90,11 @@ struct SuperellipsoidError {
 
 
 template <typename PointT>
-double Superellipsoid<PointT>::c_func(double w, double m){return SIGNUM(cos(w)) * pow(abs(cos(w)), m);}
+double Superellipsoid<PointT>::c_func(double w, double m) {return SIGNUM(cos(w)) * pow(abs(cos(w)), m);}
 
 
 template <typename PointT>
-double Superellipsoid<PointT>::s_func(double w, double m){return SIGNUM(sin(w)) * pow(abs(sin(w)), m);}
+double Superellipsoid<PointT>::s_func(double w, double m) {return SIGNUM(sin(w)) * pow(abs(sin(w)), m);}
 
 
 template <typename PointT>
@@ -107,25 +107,25 @@ Superellipsoid<PointT>::Superellipsoid(typename pcl::PointCloud<PointT>::Ptr clo
 
 #ifndef DISABLE_ROS_SUPERELLIPSOID_H
 template <typename PointT>
-Superellipsoid<PointT>::Superellipsoid(superellipsoid_msgs::Superellipsoid::ConstPtr se)
+Superellipsoid<PointT>::Superellipsoid(const superellipsoid_msgs::Superellipsoid &se)
 {
   normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
   parameters_ptr = std::make_shared<std::vector<double>>();
-  (*parameters_ptr)[0] = se->a;
-  (*parameters_ptr)[1] = se->b;
-  (*parameters_ptr)[2] = se->c;
-  (*parameters_ptr)[3] = se->e1;
-  (*parameters_ptr)[4] = se->e2;
-  (*parameters_ptr)[5] = se->tx;
-  (*parameters_ptr)[6] = se->ty;
-  (*parameters_ptr)[7] = se->tz;
-  (*parameters_ptr)[8] = se->roll;
-  (*parameters_ptr)[9] = se->pitch;
-  (*parameters_ptr)[10] = se->yaw;
+  (*parameters_ptr)[0] = se.a;
+  (*parameters_ptr)[1] = se.b;
+  (*parameters_ptr)[2] = se.c;
+  (*parameters_ptr)[3] = se.e1;
+  (*parameters_ptr)[4] = se.e2;
+  (*parameters_ptr)[5] = se.tx;
+  (*parameters_ptr)[6] = se.ty;
+  (*parameters_ptr)[7] = se.tz;
+  (*parameters_ptr)[8] = se.roll;
+  (*parameters_ptr)[9] = se.pitch;
+  (*parameters_ptr)[10] = se.yaw;
 }
 
 template <typename PointT>
-superellipsoid_msgs::Superellipsoid Superellipsoid<PointT>::generateRosMessage()
+superellipsoid_msgs::Superellipsoid Superellipsoid<PointT>::generateRosMessage() const
 {
   superellipsoid_msgs::Superellipsoid se;
   se.a = (*parameters_ptr)[0];
@@ -275,7 +275,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout)
 
 // https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool apply_transformation/*=true*/)
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool apply_transformation/*=true*/) const
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
 
@@ -335,7 +335,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool a
 
 // https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double resolution, bool apply_transformation/*=true*/)
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double resolution, bool apply_transformation/*=true*/) const
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
 
@@ -397,7 +397,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double 
 
 
 template <typename PointT>
-std::map<std::string, double> Superellipsoid<PointT>::getParameters()
+std::map<std::string, double> Superellipsoid<PointT>::getParameters() const
 {
   std::map<std::string, double> parameters_dict;
   parameters_dict.insert(std::pair<std::string, double>("a", (*parameters_ptr)[0]));
@@ -417,7 +417,7 @@ std::map<std::string, double> Superellipsoid<PointT>::getParameters()
 
 
 template <typename PointT>
-pcl::PointXYZ Superellipsoid<PointT>::getOptimizedCenter()
+pcl::PointXYZ Superellipsoid<PointT>::getOptimizedCenter() const
 {
   pcl::PointXYZ p((*parameters_ptr)[5], (*parameters_ptr)[6], (*parameters_ptr)[7]);
   return p;
@@ -447,7 +447,7 @@ pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::getNormals()
 
 // ref: https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-double Superellipsoid<PointT>::computeVolume()
+double Superellipsoid<PointT>::computeVolume() const
 {
   double a = (*parameters_ptr)[0];
   double b = (*parameters_ptr)[1];
@@ -466,7 +466,7 @@ double Superellipsoid<PointT>::computeVolume()
 // ----------------------------------------------------------------------------------
 
 
-SuperellipsoidError::SuperellipsoidError(double x_, double y_, double z_, double *priors_) : x(x_), y(y_), z(z_), priors(priors_){}
+inline SuperellipsoidError::SuperellipsoidError(double x_, double y_, double z_, double *priors_) : x(x_), y(y_), z(z_), priors(priors_){}
 
 
 template <typename T> bool SuperellipsoidError::operator()(const T* const parameters, T* residual) const
