@@ -1,41 +1,19 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find capsicum_superellipsoid_detector)/launch/rviz_sim.rviz"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find capsicum_superellipsoid_detector)/launch/rviz_real.rviz"/>
 
   <node pkg="capsicum_superellipsoid_detector" type="detector_node" name="capsicum_superellipsoid_detector" output="screen" respawn="true">
     <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
-    <param name="queue_size" value="300"/>
-    <param name="exact_sync" value="false"/>
-    <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
-    <remap from="rgb/image_rect_color" to="/camera/color/image_raw"/>
-    <remap from="depth_registered/image_rect" to="/roi_depth"/>
-    <!-- <remap from="depth_registered/image_rect" to="/camera/depth/image_raw"/> -->
-  </node>
-
-<!--
   <node pkg="agrobot_mrcnn_ros" type="agrobot_mrcnn_ros" name="agrobot_mrcnn_ros_node" output="screen">
     <param name="model" value="$(find agrobot_mrcnn_ros)/CKA20_sweet_pepper/Bonn_Coco_deeplab_best_validation_loss_epoch_00105.pth"/>
     <param name="score_threshold" value="0.6"/>
   </node>
--->
 
-  <node pkg="capsicum_superellipsoid_detector" type="simulate_depth_noise.py" name="simulate_depth_noise" output="screen"></node>
-  <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb2" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
-    <param name="queue_size" value="300"/>
-    <param name="exact_sync" value="false"/>
-    <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
-    <remap from="rgb/image_rect_color" to="/camera/color/image_raw"/>
-    <remap from="depth_registered/points" to="/camera/depth/points_noisy"/>
-    <remap from="depth_registered/image_rect" to="/camera/depth/image_raw_noisy"/>
-  </node>
-
-<!--
   <node pkg="capsicum_superellipsoid_detector" type="mask_filter.py" name="mask_filter_for_agrobot_mrcnn" output="screen">
-    <remap from="input_depth" to="/camera/depth/image_raw_noisy"/>
+    <remap from="input_depth" to="/camera/aligned_depth_to_color/image_raw"/>
     <remap from="input_detection" to="/agrobot_mrcnn_ros_node/detections"/>
   </node>
 
@@ -47,11 +25,27 @@
     <remap from="rgb/image_rect_color" to="/camera/color/image_raw"/>
     <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
   </node>
--->
+
+  <node pkg="nodelet" type="nodelet" name="cloudify_full" output="screen" args="standalone depth_image_proc/point_cloud_xyzrgb">
+    <param name="queue_size" value="300"/>
+    <param name="exact_sync" value="false"/>
+    <remap from="depth_registered/image_rect" to="/camera/aligned_depth_to_color/image_raw"/>
+    <remap from="depth_registered/points" to="/camera/depth/points"/>
+    <remap from="rgb/image_rect_color" to="/camera/color/image_raw"/>
+    <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
+  </node>
 
   <node pkg="nodelet" type="nodelet" name="statistical_filter" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
-    <remap from="~input" to="/detect_roi/roi_cloud"/>
+    <remap from="~input" to="/camera/depth_masked/points"/>
     <remap from="~output" to="/camera/depth_masked/points_filtered"/>
+    <param name="mean_k" value="5"/>
+    <param name="stddev" value="0.01"/>
+    <param name="negative" value="false"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="statistical_filter_full" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
+    <remap from="~input" to="/camera/depth/points"/>
+    <remap from="~output" to="/camera/depth/points_filtered"/>
     <param name="mean_k" value="5"/>
     <param name="stddev" value="0.01"/>
     <param name="negative" value="false"/>
@@ -59,13 +53,35 @@
 
   <node pkg="capsicum_superellipsoid_detector" type="trigger_voxblox.py" name="trigger_voxblox" output="screen">
     <param name="service_name" value="/voxblox_node/publish_pointclouds"/>
-    <param name="rate" value="0.33"/>
+    <param name="rate" value="0.2"/>
   </node>
 
   <node pkg="voxblox_ros" type="tsdf_server" name="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
     <!--<remap from="pointcloud" to="/camera/depth_registered/points_filtered"/>-->
     <remap from="pointcloud" to="/camera/depth_masked/points_filtered"/>
-    <param name="tsdf_voxel_size" value="0.004" />
+    <param name="tsdf_voxel_size" value="0.005" />
+    <param name="tsdf_voxels_per_side" value="64" />
+    <param name="voxel_carving_enabled" value="true" />
+    <param name="color_mode" value="color" />
+    <param name="use_tf_transforms" value="true" />
+    <param name="update_mesh_every_n_sec" value="1.0" />
+    <param name="min_time_between_msgs_sec" value="0.0" />
+    <param name="method" value="simple" />
+    <param name="use_const_weight" value="false" />
+    <param name="allow_clear" value="true" />
+    <param name="verbose" value="false" />
+    <!--<param name="max_ray_length_m" value="1.0"/>-->
+    <param name="enable_icp" value="false"/>
+    <param name="icp_mini_batch_size" value="1000"/>
+    <param name="accumulate_icp_corrections" value="false"/>
+    <param name="publish_tsdf_info" value="true"/>
+    <!-- <param name="start_voxel_subsampling_factor" value="8"/> -->
+  </node>
+
+  <node pkg="voxblox_ros" type="tsdf_server" name="voxblox_node_full" output="screen" args="-alsologtostderr" clear_params="true">
+    <!--<remap from="pointcloud" to="/camera/depth_registered/points_filtered"/>-->
+    <remap from="pointcloud" to="/camera/depth/points_filtered"/>
+    <param name="tsdf_voxel_size" value="0.005" />
     <param name="tsdf_voxels_per_side" value="64" />
     <param name="voxel_carving_enabled" value="true" />
     <param name="color_mode" value="color" />
