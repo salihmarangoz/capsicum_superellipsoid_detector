@@ -9,7 +9,7 @@
 
   <node pkg="agrobot_mrcnn_ros" type="agrobot_mrcnn_ros" name="agrobot_mrcnn_ros_node" output="screen">
     <param name="model" value="$(find agrobot_mrcnn_ros)/CKA20_sweet_pepper/Bonn_Coco_deeplab_best_validation_loss_epoch_00105.pth"/>
-    <param name="score_threshold" value="0.6"/>
+    <param name="score_threshold" value="0.85"/>
   </node>
 
   <node pkg="capsicum_superellipsoid_detector" type="mask_filter.py" name="mask_filter_for_agrobot_mrcnn" output="screen">
@@ -38,15 +38,15 @@
   <node pkg="nodelet" type="nodelet" name="statistical_filter" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
     <remap from="~input" to="/camera/depth_masked/points"/>
     <remap from="~output" to="/camera/depth_masked/points_filtered"/>
-    <param name="mean_k" value="5"/>
-    <param name="stddev" value="0.01"/>
+    <param name="mean_k" value="11"/>
+    <param name="stddev" value="0.001"/>
     <param name="negative" value="false"/>
   </node>
 
   <node pkg="nodelet" type="nodelet" name="statistical_filter_full" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
     <remap from="~input" to="/camera/depth/points"/>
     <remap from="~output" to="/camera/depth/points_filtered"/>
-    <param name="mean_k" value="5"/>
+    <param name="mean_k" value="7"/>
     <param name="stddev" value="0.01"/>
     <param name="negative" value="false"/>
   </node>

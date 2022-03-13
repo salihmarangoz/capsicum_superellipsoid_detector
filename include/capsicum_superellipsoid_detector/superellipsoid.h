@@ -77,7 +77,7 @@ struct SuperellipsoidError {
                                      const double y,
                                      const double z,
                                      double* const priors) {
-    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 1, 11>( // residual_size, parameters_size
+    return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 3, 11>( // residual_size, parameters_size
         new SuperellipsoidError(x, y, z, priors)));
   }
 
@@ -242,7 +242,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout)
   for (size_t i=0; i<cloud_in->size(); i++) {
     auto point_ = cloud_in->at(i).getVector3fMap();
     CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors);
-    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.5), parameters); // loss todo
+    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.2), parameters); // loss todo
     problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
 
@@ -514,12 +514,11 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 
   // EXPERIMENTAL !!!!
   // regularization via prior
-  /*
   const double C = 0.1;
   residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
   const double D = 0.1;
   residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
-  */
+  
 
   /* EXPERIMENTAL (try to fit surface normals... FAILED. I NEED TO CHECK THE LITERATURE AGAIN. MAYBE HERE: https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
   auto u = atan2(y,x);
