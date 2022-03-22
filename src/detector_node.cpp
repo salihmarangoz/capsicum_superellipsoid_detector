@@ -92,7 +92,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>(current_cluster_pc);
     new_superellipsoid->estimateNormals(0.015); // search_radius
     new_superellipsoid->estimateClusterCenter(2.5); // regularization
-    new_superellipsoid->estimateNormals(0.015);      // CALL AGAIN TO COMPUTE NORMALS W.R.T. ESTIMATED CLUSTER CENTER VIEWPOINT
+    new_superellipsoid->flipNormalsTowardsClusterCenter();
     superellipsoids.push_back(new_superellipsoid);
   }
 

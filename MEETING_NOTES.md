@@ -4,6 +4,19 @@ Note: Some notes are missing.
 
 
 
+### 22-Mar-2022
+
+- Using curvature signs for normals direction correction didn't work well.
+- Instead of computing normals twice, using `pcl::flipNormalTowardsViewpoint`. Example code:
+
+```c++
+new_superellipsoid->estimateNormals(0.015);
+new_superellipsoid->estimateClusterCenter(2.5);
+new_superellipsoid->flipNormalsTowardsClusterCenter();
+```
+
+
+
 ### 09-Mar-2022
 
 - Capsicum plant model cleaning notes:

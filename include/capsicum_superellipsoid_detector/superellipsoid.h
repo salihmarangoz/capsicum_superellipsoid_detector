@@ -36,6 +36,7 @@ class Superellipsoid
 public:
   Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_in);
   pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius);
+  void flipNormalsTowardsClusterCenter();
   pcl::PointXYZ estimateClusterCenter(float regularization);
   pcl::PointXYZ getEstimatedCenter();
   typename pcl::PointCloud<PointT>::Ptr getCloud();
@@ -154,9 +155,24 @@ pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float 
   ne.setInputCloud(cloud_in);
   ne.setRadiusSearch (search_radius); // Use all neighbors in a sphere of radius 3cm (0.03f) might be a good value
   normals_in->points.reserve(cloud_in->points.size());
-  ne.setViewPoint(estimated_center.x, estimated_center.y, estimated_center.z);
   ne.compute (*normals_in);
   return normals_in;
+}
+
+
+template <typename PointT>
+void Superellipsoid<PointT>::flipNormalsTowardsClusterCenter()
+{
+  for (size_t i = 0; i < normals_in->size(); i++)
+  {
+    pcl::flipNormalTowardsViewpoint(cloud_in->points.at(i),
+                                    estimated_center.x,
+                                    estimated_center.y,
+                                    estimated_center.z,
+                                    normals_in->at(i).normal_x,
+                                    normals_in->at(i).normal_y,
+                                    normals_in->at(i).normal_z);
+  }
 }
 
 
