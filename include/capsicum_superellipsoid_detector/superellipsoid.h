@@ -506,21 +506,39 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
   const T y__ = point_[1];
   const T z__ = point_[2];
 
-  // loss
+  /////////////////////////// Cost /////////////////////////////////////
   const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
-  //residual[0] = f1 - 1.; // doesn't fit well
-  //residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.); // cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-  residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.)); // Experimental: cost function based on distance to the surface mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
 
+  // 1) FAILED. Naive solution using implicit definition of the superellipsoid
+  //    Doesn't fit well
+  //residual[0] = f1 - 1.;
+
+  // 2) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+  //    Have problems while optimizing rotations. also makes the cost function double squared.
+  //residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
+
+  // 3) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
+  //    Fits well enough even though this is not a super good approximation.
+  residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.));
+
+  // 4) FAILED. Better approximation (or maybe true distance) to the superellipsoid surface.
+  //    Fits data well but the results are not good with limited views. Disregards other priors (residuals). 
+  //residual[0] = abs(pow(f1,e1/2.) - 1.);
+
+  // 5) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+  //    Fits well enough. Enable other priors to fit data well with limited views.
+  //residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.);
+
+  /////////////////////////// Prior/Regularization /////////////////////////////////////
   // EXPERIMENTAL !!!!
-  // regularization via prior
   const double C = 0.1;
   residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
   const double D = 0.1;
   residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
-  
+
 
   /* EXPERIMENTAL (try to fit surface normals... FAILED. I NEED TO CHECK THE LITERATURE AGAIN. MAYBE HERE: https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
+  CAN BE AN ALTERNATIVE INSTEAD OF USING SINGLE CENTER ESTIMATION. 
   auto u = atan2(y,x);
   auto v = 2.*asin(z);
   auto r = 2./e2;
