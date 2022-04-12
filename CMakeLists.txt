@@ -4,20 +4,6 @@ project(capsicum_superellipsoid_detector)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
 
-
-#set(ENABLE_ADDRESS_SANITIZER true)
-if(DEFINED ENABLE_ADDRESS_SANITIZER)
-  MESSAGE("===========================================================")
-  MESSAGE("===========================================================")
-  MESSAGE("ADDRESS SANITIZER IS ENABLED FOR ${CMAKE_PROJECT_NAME}")
-  MESSAGE("============ THIS MAY LOWER THE PERFORMANCE ===============")
-  MESSAGE("===========================================================")
-  MESSAGE("===========================================================")
-  ADD_COMPILE_OPTIONS(-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer -g)
-  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-recover=address -g")
-endif(DEFINED ENABLE_ADDRESS_SANITIZER)
-
-
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages

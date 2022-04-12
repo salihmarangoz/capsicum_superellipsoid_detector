@@ -161,22 +161,3 @@ getColoredCloud (pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std::vector<pc
 
 
 } // namespace
-
-
-
-/*
-    pcl::PointCloud<pcl::PointXYZ>::Ptr superellipsoids (new pcl::PointCloud<pcl::PointXYZ>);
-    // fit superellipsoid
-    auto parameters_ptr = fitSuperellipsoid(pc_tmp_, cp_pcl);
-
-    if (parameters_ptr != nullptr)
-    {
-      roi_centers->push_back(pcl::PointXYZ(parameters_ptr->at(5), parameters_ptr->at(6), parameters_ptr->at(7))); // todo
-    }
-*/
-
-
-
-/*
-  pcl::PointCloud<pcl::PointXYZ>::Ptr roi_centers (new pcl::PointCloud<pcl::PointXYZ>);
-  */
