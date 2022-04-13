@@ -1,20 +1,12 @@
 # capsicum_superellipsoid_detector
 
-toc todo
+**TOC TODO**
 
-**Salih Marangoz - s6samara@uni-bonn.de**
+Author: Salih Marangoz - s6samara@uni-bonn.de
+
+Thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity.
 
 ## Introduction
-
-**TODO**
-
-- example bag file
-- ros parameters
-- list contributions?
-- experimental clustering?
-- missing parts of the fruit
-- fix the problem with simulator launch file
-- clean git history from pdf and ipynb files.
 
 **TODO**
 
@@ -25,6 +17,7 @@ toc todo
 | Related File                                                 | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [detector_prototype.py](scripts/detector_prototype.py)       | First prototype Python code with ROS1 support. New ideas are not implemented here. |
+| [simulate_depth_noise.py](scripts/simulate_depth_noise.py)   | A simple code for adding noises (gaussian noise, shadowing effect, salt and pepper, waves) to the pointcloud data obtained from Gazebo simulator. |
 | [optimization.ipynb](notebooks/optimization.ipynb)           | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
 | [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
 | [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |

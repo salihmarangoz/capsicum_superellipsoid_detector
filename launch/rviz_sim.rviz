@@ -284,7 +284,7 @@ Visualization Manager:
       Voxel Coloring: Discrete
       Voxel Rendering: All Voxels
     - Class: octomap_vpp_rviz_plugin/CountingOcTreeDisplay
-      Enabled: true
+      Enabled: false
       Max color: 300
       Max. Height Display: 3.4028234663852886e+38
       Max. Octree Depth: 16
@@ -294,7 +294,7 @@ Visualization Manager:
       Name: GroundTruth
       Octomap Topic: /evaluator/gt_fruits
       Queue Size: 5
-      Value: true
+      Value: false
       Voxel Alpha: 0.05000000074505806
       Voxel Coloring: Discrete
       Voxel Rendering: Outer Voxels
@@ -389,7 +389,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.8623358011245728
+      Distance: 0.27938777208328247
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -397,17 +397,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.10388509184122086
-        Y: 0.48420169949531555
-        Z: 0.37207460403442383
+        X: 0.16929107904434204
+        Y: 0.4897024929523468
+        Z: 0.49409401416778564
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7148007750511169
+      Pitch: 0.3848007321357727
       Target Frame: <Fixed Frame>
-      Yaw: 2.5497920513153076
+      Yaw: 6.123562812805176
     Saved: ~
 Window Geometry:
   Displays:

@@ -1,17 +1,51 @@
 ## Backup Forks
 
-In case of projects if disappear.
+In case of some projects disappear.
 
 - https://github.com/salihmarangoz/voxblox
-- https://github.com/salihmarangoz/perception_pcl
+- https://github.com/salihmarangoz/perception_pcl (not needed for current version)
 - https://github.com/salihmarangoz/OpenChisel (not needed for current version)
 - https://github.com/salihmarangoz/DirectionalTSDF (not needed for current version)
 
 
 
-## Meetings Notes
+## Weekly Meeting Notes
 
-Note: Some notes are missing.
+**Note:** Some meeting notes are missing. Some meetings are canceled because of exams, collecting data on-site, implementations needs more than a week, etc. 
+
+### 12-Apr-2022
+
+![8_fibonacci_projection_sampling](imgs/8_fibonacci_projection_sampling.png)
+
+To-Do list before closing the project:
+
+- [ ] add some images to the README
+
+- [ ] missing parts of the fruit:
+  - I have added `superellipsoid_fibonacci_projection_sampling.ipynb` and found that projection fibonacci sphere onto a superellipsoid is **a pretty good solution** (image can be found above). I will combine this idea with `find_missing_part_of_spherical_data.ipynb` for extracting missing parts of the scanned fruits.
+
+- [ ] add an example bag file (with a single pointcloud)
+
+- [ ] add ros parameters (needs to be implemented first)
+
+- [ ] add fixed parameters (e.g. macro, difficult to implement with ros parameters, etc.)
+
+- [ ] add list of contributions to the readme?
+
+- [ ] what to do with experimental clustering? it didn't work well... I will probably delete it.
+
+- [ ] fix the problem with simulator launch file. add this to `start_sim.launch` or implement this in Python or C++? I will probably add it to the launch files because this project doesn't aim segmenting depth camera data.
+
+  - ```xml
+    <node pkg="pointcloud_roi" type="filter_red_clusters_node" name="detect_roi">
+        <remap from="~input" to="/camera/depth/points" />
+        <remap from="~map_frame" to="/roi_viewpoint_planner/map_frame" />´
+    </node>
+    ```
+
+- [ ] clean git history from pdf and ipynb files. publishing the project in a public repository with research PDF's and old ipynb files with embedded videos in history is a not a good idea. (see: bfg-repo-cleaner)
+
+- [ ] compile the project in a VM with fresh Ubuntu for missing dependencies, etc.
 
 ### 22-Mar-2022
 
@@ -191,14 +225,10 @@ superellipsoids:
 
 
 
-
-
 ### 02-Nov-2021
 
 - Opened a new repository: https://gitlab.igg.uni-bonn.de/hrl_students/salih-marangoz-hiwi/kinfu_ls_ros
   - Checked PCL and RMonica implementations. **Selected PCL implementation as a base.** RMonica says; *"As of 2018-03-12, the integrated source code diverged significantly from original KinFu, due to many off-by-one errors which were discovered and fixed in the rolling buffer code. The code is not backward compatible with original KinFu."*. Also the RMonica ROS implementation has many synchronization problems on ROS messages. So, I started analyzing example code in the PCL (`pcl-1.10.1`) located here: https://github.com/PointCloudLibrary/pcl/blob/pcl-1.10.1/gpu/kinfu_large_scale/tools/kinfuLS_app.cpp Unfortunately there is no documentation and also every kinfu implementation uses their modified version of kinfu package so it is difficult, so implementation take a bit more time.
-
-
 
 
 
@@ -305,8 +335,8 @@ According to `PirovanoMichele` **Kinfu** doesn't use RGB values for TSDF constru
   - `2020-07-15-16-22-45.bag` There is depth and rgb data, but arm never stops moving. I will use this dataset and try syncronizing via timestamps.
 - Pull request: https://github.com/Eruvae/ur_with_cam_gazebo/pull/1
 - Pull request: https://gitlab.igg.uni-bonn.de/phenorob/cp1/roi-viewpoint-planning/agrobot_mrcnn_ros/-/merge_requests/1
-- PROBLEM:  There is a problem here. Feeding all images to DL model is not a good method. First RGB and Depth images should be synchronized, then RGB image should be processed via DL model, then achieved ROI and non-ROI RGBD data should be inserted into two different Octomaps. I can proceed with this initial thought but I have experienced many outliers with DL experiment. 
-- PROBLEM: DL solutions should be scale-invarient as much as possible but the given model is not capable in this context. Also detects mostly red peppers compared to others. 
+- PROBLEM:  There is a problem here. Feeding all images to DL model is not a good method. Firstly, RGB and Depth images should be synchronized, then RGB image should be processed via DL model, then achieved ROI and non-ROI RGBD data should be inserted into two different Octomaps. I can proceed with this initial thought but I have experienced many outliers with DL experiment. 
+- PROBLEM: DL solutions should be scale-invarient as much as possible but the given model is not capable in this context. Also the current model detects mostly red peppers compared to others. 
 - QUESTION: Mask values differ between 0 and 255, and they are not binary. Does this information means ROI probability for the corresponding pixel? Should I use this as ROI probability or occupancy probability?
 
 ```
@@ -356,7 +386,7 @@ detections:
 
 ### 26-Aug-2021
 
-- Heap corruption problem is solved with compiling PCL and Ceres-Solver. https://github.com/PointCloudLibrary/pcl/issues/4904 helped me to find that the root of the problem is the alignment of Eigen variables. **Solution added as the Dependencies section to the README.md**
+- Heap corruption problem is solved with compiling PCL and Ceres-Solver. https://github.com/PointCloudLibrary/pcl/issues/4904 helped me to find that the root of the problem is the alignment of Eigen variables.
 - Fixed ceres-solver can't found while compiling in an empty workspace.
 - Added debugging notes. Now debugging with AddressSanitizer can be enabled/disabled commenting one line in `CMakeLists.txt`
 
@@ -365,20 +395,20 @@ detections:
 ### 19-Aug-2021
 
 - Tried AddressSanitizer indicating heap-buffer-overflow. Only outputting the variable where the problem occurred, but not accurate. Will try to narrow the problem space. 
-- No progress on the project!
+- No progress, got stuck!
 
 
 
 ### 12-Aug-2021
 
-- Improved ceres-solver and implemented quite a bit but there is an important heap corruption problem blockling the progress of the project.
+- Improved ceres-solver based implementation, but there is an important heap corruption problem blockling the progress of the project.
 - Tried Valgrind and GDB but no luck.
 
 
 
 ### 05-Aug-2021
 
-- The Initial part for the solver using Ceres-solver impemented. 
+- Initial part for the solver using Ceres-solver implemented. 
 
 
 
@@ -408,7 +438,7 @@ detections:
 
 ### 22-July 2021
 
-(skipped)
+(skipped. no contributions.)
 
 
 
@@ -440,12 +470,12 @@ Screenshots:
 
 (may not be complete because this documentation is started on 15 July)
 
-- Superellipsoid optimization is implemented in Python. Prototype can be found in ` notebooks/detector.ipynb`
+- Superellipsoid optimization is implemented in Python. Prototype can be found in ` notebooks/detector_prototype.ipynb`
 
 ToDo:
 
 - Optimization gets stuck in local solutions (can be seen in the screenshot, the pepper on the upper right). Needs a prediction of the center for peppers.
-- Use raw pointcloud from sensor.
+- Using raw pointcloud from sensor. Needs 3D mapping.
 
 Screenshots:
 
