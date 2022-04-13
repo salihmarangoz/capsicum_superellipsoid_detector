@@ -1,16 +1,20 @@
-# capsicum_superellipsoid_detector
+# Capsicum Superellipsoid Detector (ROS1)
 
 **TOC TODO**
 
 Author: Salih Marangoz - s6samara@uni-bonn.de
 
-Thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity.
+Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project.
 
 ## Introduction
 
 **TODO**
 
-- Meetings notes can be found [here](MEETING_NOTES.md).
+Youtube Link: https://www.youtube.com/watch?v=kX0oy-pKSh4
+
+[![](https://img.youtube.com/vi/kX0oy-pKSh4/0.jpg)](https://www.youtube.com/watch?v=kX0oy-pKSh4)
+
+- Meetings notes (for HiWi) can be found [here](MEETING_NOTES.md).
 
 - Prototypes and experiments (implemented in Python) can be found below:
 
@@ -21,7 +25,7 @@ Thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-z
 | [optimization.ipynb](notebooks/optimization.ipynb)           | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
 | [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
 | [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |
-| [find_missing_part_of_spherical_data.ipynb](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. |
+| [find_missing_part_of_spherical_data.ipynb](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. (**Note:** Embedded videos may not be properly visualized on Github. I recommend [this](https://chrome.google.com/webstore/detail/jupyter-notebook-viewer/ocabfdicbcamoonfhalkdojedklfcjmf) Chrome extension for opening the notebook.) |
 | [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points.      |
 
 
@@ -32,7 +36,7 @@ Thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-z
 
 Packages needed for running launch files.
 
-- **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)**
+- **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)** (3D mapping)
 
 ```
 $ cd ~/catkin_ws/src
@@ -42,9 +46,9 @@ $ git clone git@github.com:ethz-asl/voxblox.git
 $ wstool init . ./voxblox/voxblox_ssh.rosinstall
 ```
 
-- [**ur_with_cam_gazebo**](https://github.com/Eruvae/ur_with_cam_gazebo)
-- [**roi_viewpoint_planner**](https://github.com/Eruvae/roi_viewpoint_planner)
-- agrobot_mrcnn_ros
+- [**ur_with_cam_gazebo**](https://github.com/Eruvae/ur_with_cam_gazebo) (simulator)
+- [**roi_viewpoint_planner**](https://github.com/Eruvae/roi_viewpoint_planner) (robotic arm planner)
+- agrobot_mrcnn_ros (deep learning model for detecting sweet peppers in camera images)
 
 ### Package Dependencies
 

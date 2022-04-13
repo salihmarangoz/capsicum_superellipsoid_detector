@@ -19,7 +19,7 @@ In case of some projects disappear.
 
 To-Do list before closing the project:
 
-- [ ] add some images to the README
+- [ ] add some images (real-world) to the README
 
 - [ ] missing parts of the fruit:
   - I have added `superellipsoid_fibonacci_projection_sampling.ipynb` and found that projection fibonacci sphere onto a superellipsoid is **a pretty good solution** (image can be found above). I will combine this idea with `find_missing_part_of_spherical_data.ipynb` for extracting missing parts of the scanned fruits.
