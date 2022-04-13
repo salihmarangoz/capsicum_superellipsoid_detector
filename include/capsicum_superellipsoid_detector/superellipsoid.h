@@ -51,7 +51,9 @@ public:
   superellipsoid_msgs::Superellipsoid generateRosMessage() const;
 #endif
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool apply_transformation=true) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples=1000) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceParametricDefinition(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, double u_res=0.05, double v_res=0.05) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool use_fibonacci_projection=false, bool apply_transformation=true) const;
   pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true) const;
   pcl::PointXYZ getOptimizedCenter() const;
   double computeVolume() const;
@@ -59,7 +61,7 @@ public:
   static double c_func(double w, double m);
   static double s_func(double w, double m);
 
-private:
+//private:
   typename pcl::PointCloud<PointT>::Ptr cloud_in;
   pcl::PointCloud<pcl::Normal>::Ptr normals_in;
   pcl::PointXYZ estimated_center;
@@ -288,13 +290,107 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout)
   return summary.IsSolutionUsable(); // true if converged
 }
 
-
-// https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool apply_transformation/*=true*/) const
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples) const
+{
+  pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
+  double phi = M_PI * (3.0 - sqrt(5.0));  // golden angle in radians
+  int max_iter = std::ceil( -std::log10(std::min(e1, e2) )+1); // 3 iterations for very low e1/e2 and less iterations for others are enough
+
+  for (int i=0; i<num_samples; i++)
+  {
+    // Sample from fibonacci sphere
+    double y = 1.0 - (i / (num_samples - 1.0)) * 2.0;  // y goes from 1 to -1
+    double radius = sqrt(1 - y * y);  // radius at y
+    double theta = phi * i;  // golden angle increment
+    double x = cos(theta) * radius;
+    double z = sin(theta) * radius;
+
+    // Project the sampled point onto superellipsoid
+    for (int j=0; j<max_iter; j++)
+    {
+      // Compute distance to superellipsoid surface (approximation) and distance to center
+      double f = pow(pow(abs(x),2.0/e2) + pow(abs(y),2.0/e2), e2/e1) + pow(abs(z),2.0/e1); // assuming a=1, b=1, c=1
+      double distance_to_center = sqrt(pow(x,2) + pow(y,2) + pow(z,2));
+      double distance_to_superellipsoid;
+      if (f > 1.0)
+      { // if outside
+        distance_to_superellipsoid = abs(1.0-pow(f, e1/2.0));
+      }
+      else
+      { // if inside
+        distance_to_superellipsoid = -1.0 * distance_to_center * abs(1.0-pow(f, -e1/2.0));
+      }
+
+      // Project using normalizer
+      double normalizer = (distance_to_center - distance_to_superellipsoid) / distance_to_center;
+      x = x * normalizer;
+      y = y * normalizer;
+      z = z * normalizer;
+    }
+
+    // scale with a,b,c
+    x = x * a;
+    y = y * b;
+    z = z * c;
+
+    // rotation and translation
+    double angles[3] = {roll, pitch, yaw};
+    double rotation_matrix_[9];
+    ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix_);
+    auto rotation_matrix = Eigen::Map<Eigen::Matrix<double,3,3> >(rotation_matrix_);
+    Eigen::Matrix<double, 3, 1> point {x,y,z};
+    auto rotated_point = rotation_matrix * point;
+    pcl::PointXYZ transformed_point;
+    transformed_point.x = rotated_point[0] + tx;
+    transformed_point.y = rotated_point[1] + ty;
+    transformed_point.z = rotated_point[2] + tz;
+    output_pc->push_back(transformed_point);
+  }
+
+  return output_pc;
+}
+
+template <typename PointT>
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceParametricDefinition(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, double u_res/*=0.05*/, double v_res/*=0.05*/) const
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
 
+  // rotation
+  double angles[3] = {roll, pitch, yaw};
+  double rotation_matrix[9];
+  ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
+  auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<double,3,3> >(rotation_matrix);
+
+  for (double uu=-M_PI; uu<M_PI; uu+=u_res)
+  {
+    for (double vv=-M_PI/2; vv<M_PI/2; vv+=v_res) // todo
+    {
+      double r = 2./e2;
+      double t = 2./e1;
+
+      double x = a * c_func(vv, 2./t) * c_func(uu, 2./r);
+      double y = b * c_func(vv, 2./t) * s_func(uu, 2./r);
+      double z = c * s_func(vv, 2./t);
+
+      Eigen::Matrix<double, 3, 1> point {x,y,z};
+      auto point_ = rotation_matrix_ * point;
+      pcl::PointXYZ point__;
+      point__.x = point_[0] + tx;
+      point__.y = point_[1] + ty;
+      point__.z = point_[2] + tz;
+      output_pc->push_back(point__);
+    }
+  }
+
+  return output_pc;
+}
+
+
+// https://en.wikipedia.org/wiki/Superellipsoid
+template <typename PointT>
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool use_fibonacci_projection/*=false*/, bool apply_transformation/*=true*/) const
+{
   double a_ = (*parameters_ptr)[0];
   double b_ = (*parameters_ptr)[1];
   double c_ = (*parameters_ptr)[2];
@@ -307,45 +403,24 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool a
   double pitch_ = (*parameters_ptr)[9];
   double yaw_ = (*parameters_ptr)[10];
 
-  // rotation
-  double angles[3] = {roll_, pitch_, yaw_};
-  double rotation_matrix[9];
-  ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
-  auto rotation_matrix_ = Eigen::Map<Eigen::Matrix<double,3,3> >(rotation_matrix);
-
-  for (double uu=-M_PI; uu<M_PI; uu+=0.05) // todo
+  if (!apply_transformation)
   {
-    for (double vv=-M_PI/2; vv<M_PI/2; vv+=0.05) // todo
-    {
-      double r = 2./e2_;
-      double t = 2./e1_;
-
-      double x = a_ * c_func(vv, 2./t) * c_func(uu, 2./r);
-      double y = b_ * c_func(vv, 2./t) * s_func(uu, 2./r);
-      double z = c_ * s_func(vv, 2./t);
-
-      Eigen::Matrix<double, 3, 1> point {x,y,z};
-      if (apply_transformation)
-      {
-        auto point_ = rotation_matrix_ * point;
-        pcl::PointXYZ point__;
-        point__.x = point_[0] + tx_;
-        point__.y = point_[1] + ty_;
-        point__.z = point_[2] + tz_;
-        output_pc->push_back(point__);
-      }
-      else
-      {
-        pcl::PointXYZ point__;
-        point__.x = point[0];
-        point__.y = point[1];
-        point__.z = point[2];
-        output_pc->push_back(point__);
-      }
-
-    }
+    tx_ = 0.0;
+    ty_ = 0.0;
+    tz_ = 0.0;
+    roll_ = 0.0;
+    pitch_ = 0.0;
+    yaw_ = 0.0;
   }
-  return output_pc;
+
+  if (use_fibonacci_projection)
+  {
+    return _sampleSurfaceFibonacciProjection(a_, b_, c_, e1_, e2_, tx_, ty_, tz_, roll_, pitch_, yaw_, 1000); // num_samples=1000
+  }
+  else
+  {
+    return _sampleSurfaceParametricDefinition(a_, b_, c_, e1_, e2_, tx_, ty_, tz_, roll_, pitch_, yaw_, 0.05, 0.05); // u_res=v_res=0.05
+  }
 }
 
 
@@ -474,7 +549,6 @@ double Superellipsoid<PointT>::computeVolume() const
   //double r = 2./e2;
   //double t = 2./e1;
   //return (2./3.) * a * b * c * (4./(r*t)) * boost::math::beta(1/r, 1/r) * boost::math::beta(2/t, 1/t);
-
   return (2./3.) * a * b * c * e1 * e2 * boost::math::beta(e2/2., e2/2.) * boost::math::beta(e1, e1/2.);
 }
 
@@ -530,18 +604,14 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
   //residual[0] = f1 - 1.;
 
   // 2) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-  //    Have problems while optimizing rotations. also makes the cost function double squared.
+  //    Have problems while optimizing rotations. also the cost function looks double squared.
   //residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
 
   // 3) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
   //    Fits well enough even though this is not a super good approximation.
   residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.));
 
-  // 4) FAILED. Better approximation (or maybe true distance) to the superellipsoid surface.
-  //    Fits data well but the results are not good with limited views. Disregards other priors (residuals). 
-  //residual[0] = abs(pow(f1,e1/2.) - 1.);
-
-  // 5) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+  // 4) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
   //    Fits well enough. Enable other priors to fit data well with limited views.
   //residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.);
 
@@ -551,22 +621,6 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
   residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
   const double D = 0.1;
   residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
-
-
-  /* EXPERIMENTAL (try to fit surface normals... FAILED. I NEED TO CHECK THE LITERATURE AGAIN. MAYBE HERE: https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
-  CAN BE AN ALTERNATIVE INSTEAD OF USING SINGLE CENTER ESTIMATION. 
-  auto u = atan2(y,x);
-  auto v = 2.*asin(z);
-  auto r = 2./e2;
-  auto t = 2./e1;
-  auto x___ = a * c_func_(v, 2./t) * c_func_(u, 2./r);
-  auto y___ = b * c_func_(v, 2./t) * s_func_(u, 2./r);
-  auto z___ = c * s_func_(v, 2./t);
-  const double C = 0.1;
-  residual[1] = (abs(x__)-x___)*C ;
-  residual[2] = (abs(y__)-y___)*C ;
-  residual[3] = (abs(z__)-z___)*C ;
-  */
 
   return true;
 }

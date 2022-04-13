@@ -159,7 +159,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     pcl::PointCloud<pcl::PointXYZ>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZ>);
     for (const auto &se : converged_superellipsoids)
     {
-      *(debug_pc) += *(se->sampleSurface());
+      *(debug_pc) += *(se->sampleSurface(true));
     }
     sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*debug_pc, *debug_pc_ros);
