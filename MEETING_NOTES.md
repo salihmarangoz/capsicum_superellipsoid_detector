@@ -1,12 +1,22 @@
+## Backup Forks
+
+In case of projects if disappear.
+
+- https://github.com/salihmarangoz/voxblox
+- https://github.com/salihmarangoz/perception_pcl
+- https://github.com/salihmarangoz/OpenChisel (not needed for current version)
+- https://github.com/salihmarangoz/DirectionalTSDF (not needed for current version)
+
+
+
 ## Meetings Notes
 
 Note: Some notes are missing.
 
-
-
 ### 22-Mar-2022
 
 - Using curvature signs for normals direction correction didn't work well.
+- I think accessing mesh inside of voxblox needs some workaround. I think the mesh can be exported as PointCloud2 with XYZRGBNormal. https://pointclouds.org/documentation/structpcl_1_1_point_x_y_z_r_g_b_normal.html
 - Instead of computing normals twice, using `pcl::flipNormalTowardsViewpoint`. Example code:
 
 ```c++

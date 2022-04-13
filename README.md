@@ -1,26 +1,46 @@
 # capsicum_superellipsoid_detector
 
-[toc]
+toc todo
 
-**Salih Marangoz - s6samara@uni-bonn.de - salih285@gmail.com**
+**Salih Marangoz - s6samara@uni-bonn.de**
 
-## Meeting Notes
+## Introduction
 
-Can be found [here](MEETING_NOTES.md).
+**TODO**
+
+- example bag file
+- ros parameters
+- list contributions?
+- experimental clustering?
+- missing parts of the fruit
+- fix the problem with simulator launch file
+- clean git history from pdf and ipynb files.
+
+**TODO**
+
+- Meetings notes can be found [here](MEETING_NOTES.md).
+
+- Prototypes and some experiments (implemented in Python) can be found in the `notebooks` folder:
+
+| Notebook File                                                | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| [optimization](notebooks/optimization.ipynb)                 | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
+| [intersection_of_lines](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
+| [cost_functions](notebooks/cost_functions.ipynb)             | Analyzing of different cost functions.                       |
+| [find_missing_part_of_spherical_data](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. |
+| [superellipsoid_fibonacci_projection_sampling](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points.      |
+
+
 
 ## Installation
 
-### Workspace Packages
+### Related Packages
 
-TODO
+Packages needed for running launch files.
 
-### Dependencies
+- **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)**
 
-- superellipsoid_msgs: https://gitlab.igg.uni-bonn.de/hrl_students/salih-marangoz-hiwi/superellipsoid_msgs
-
-- Voxblox (See for more: https://voxblox.readthedocs.io/en/latest/pages/Installation.html)
-
-```bash
+```
 $ cd ~/catkin_ws/src
 $ mkdir voxblox
 $ cd voxblox
@@ -28,7 +48,21 @@ $ git clone git@github.com:ethz-asl/voxblox.git
 $ wstool init . ./voxblox/voxblox_ssh.rosinstall
 ```
 
-- Ceres Solver (Both versions should be OK. But I have developed the project using the version 2.x.x)
+- [**ur_with_cam_gazebo**](https://github.com/Eruvae/ur_with_cam_gazebo)
+- [**roi_viewpoint_planner**](https://github.com/Eruvae/roi_viewpoint_planner)
+- agrobot_mrcnn_ros
+
+### Package Dependencies
+
+Dependencies needed **only** for compiling and running the node (excluding launch files).
+
+- **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**
+- **[octomap_vpp](https://github.com/Eruvae/octomap_vpp)**
+  - Only used for publishing **`~superellipsoids_volume_octomap`**. 
+  - Also, **[octomap_vpp_rviz_plugin](https://github.com/Eruvae/octomap_vpp_rviz_plugin)** may be useful for visualization.
+
+
+- **[Ceres Solver](http://ceres-solver.org/installation.html):** (I have developed the project using the version 2.x.x but both versions should be OK.)
 
   - Apt Installation (version 1.x.x)
 
@@ -50,54 +84,35 @@ $ wstool init . ./voxblox/voxblox_ssh.rosinstall
   $ sudo make install # run "sudo make uninstall" for uninstalling if needed
   ```
 
-- Others
-
-```bash
-$ cd ~/catkin_ws
-$ rosdep install --from-paths src --ignore-src -r # for other dependencis
-```
-
 ### Compile
 
 ```bash
 $ cd catkin_ws/
+$ rosdep install --from-paths src --ignore-src -r # install missing dependencis
 $ catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
-## Backup Forks
+## Running
 
-In case of projects if disappear.
-
-- https://github.com/salihmarangoz/voxblox
-- https://github.com/salihmarangoz/perception_pcl
-- https://github.com/salihmarangoz/OpenChisel (not needed for current version)
-- https://github.com/salihmarangoz/DirectionalTSDF (not needed for current version)
-
-## Running & Debugging
-
-For **running** the node run the following command:
+For **running** the node use the following command:
 
 ```bash
-$ roslaunch capsicum_superellipsoid_detector start_sim.launch
+$ roslaunch capsicum_superellipsoid_detector start_sim.launch # for simulation
 # OR
-$ roslaunch capsicum_superellipsoid_detector start_real.launch
+$ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 ```
-
-For **debugging**, there are two lines in `CMakeLists.txt` which enable AddressSanitizer and add debug symbols. For detecting heap corruptions, stack overflow, etc this method would be better. Also, AddressSanitizer slows the application by 2x, while the performance impact is 10x with GDB. If you can't see the line number in the AddressSanitizer output, some dependencies should be installed:
-
-```bash
-$ sudo apt install clang llvm  # note: clang may not be revelant
-```
-
-
 
 ## ROS Topics, Transforms, and Services
+
+### Parameters
+
+todo
 
 ### Subscribed Topics
 
 **`~pc_in`** ("sensor_msgs/PointCloud2")
 
-- RGBXYZ pointcloud as the input (e.g. Voxblox output can be used as the input). Currently RGB information is not used. Some modifications may be needed to feed XYZ only pointcloud.
+- RGBXYZ pointcloud as the input (e.g. voxblox output can be used as the input). Currently RGB information is not used. Some modifications may be needed to feed XYZ only pointcloud.
 
 ### Published Topics
 
@@ -128,4 +143,14 @@ $ sudo apt install clang llvm  # note: clang may not be revelant
 
 ### Services
 
-There are no services for the written node. But Voxblox needs a `std_srvs/Empty` to publish pointclouds of mapped plants which is also triggering the computation of the Superellipsoid Detector node. Currently this task is assigned to `scripts/trigger_voxblox.py` which calls the related service in a fixed interval.
+There are no services for the written node. But voxblox needs a `std_srvs/Empty` for publishing pointclouds of mapped plants which will be also triggering the computation of the superellipsoid detector node. Currently this task is assigned to `scripts/trigger_voxblox.py` which calls the related service in a fixed interval.
+
+
+
+## Future Work
+
+- Accessing to voxblox mesh (vertices and normas) directly would be better. This can take away the need to estimate normals. But this needs some workarounds and code modifications in voxblox.
+- Better clustering / instance segmentation.
+- 3D mapping with Instance segmentation. Mapping with masking pointcloud impacts the quality.
+- Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
+- Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.

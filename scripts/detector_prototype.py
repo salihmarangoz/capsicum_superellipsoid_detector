@@ -59,7 +59,6 @@ def translate_xyz(x,y,z,Tx,Ty,Tz):
 def loss(x0,x,y,z):
     a,b,c,e1,e2,tx,ty,tz,yaw,pitch,roll = x0
 
-    # todo:
     e1, e2 = np.abs(e1), np.abs(e2)
     
     # https://otik.uk.zcu.cz/bitstream/11025/1637/1/D71.pdf
@@ -73,16 +72,6 @@ def loss(x0,x,y,z):
     #f = (np.sqrt(a*b*c) * (f**e1 - 1.))**2
     f = np.abs(a*b*c) * (f**e1 - 1.)**2
     
-    # additions: (MAYBE? OR ADD THESE AS A CONSTRAINT)
-    #f += 0.001*np.abs(tx + ty + tz)
-    #f += 0.001*np.abs(roll+pitch+yaw)
-    #f += 0.001*(a-1)
-    #f += 0.001*(b-1)
-    #f += 0.001*(c-1)
-
-    #f = np.sum(f)
-    #f = np.linalg.norm(f)
-    #print(f)
     return f
 
 
