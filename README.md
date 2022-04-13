@@ -20,15 +20,16 @@ toc todo
 
 - Meetings notes can be found [here](MEETING_NOTES.md).
 
-- Prototypes and some experiments (implemented in Python) can be found in the `notebooks` folder:
+- Prototypes and experiments (implemented in Python) can be found below:
 
-| Notebook File                                                | Description                                                  |
+| Related File                                                 | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [optimization](notebooks/optimization.ipynb)                 | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
-| [intersection_of_lines](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
-| [cost_functions](notebooks/cost_functions.ipynb)             | Analyzing of different cost functions.                       |
-| [find_missing_part_of_spherical_data](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. |
-| [superellipsoid_fibonacci_projection_sampling](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points.      |
+| [detector_prototype.py](scripts/detector_prototype.py)       | First prototype Python code with ROS1 support. New ideas are not implemented here. |
+| [optimization.ipynb](notebooks/optimization.ipynb)           | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
+| [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
+| [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |
+| [find_missing_part_of_spherical_data.ipynb](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. |
+| [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points.      |
 
 
 
