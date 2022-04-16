@@ -52,7 +52,7 @@ Some prototypes and experiments (implemented in Python) can be found below. Sele
 
 ### Related Packages
 
-Packages needed for running launch files.
+Packages needed for running launch files. Try running `start_bag.launch` if you don't want to install these packages.
 
 - **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)** (3D mapping)
 
@@ -114,6 +114,8 @@ $ catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
 For **running** the node use the following command:
 
 ```bash
+$ $ roslaunch capsicum_superellipsoid_detector start_bag.launch # for a quick demo
+# OR
 $ roslaunch capsicum_superellipsoid_detector start_sim.launch # for simulation
 # OR
 $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
