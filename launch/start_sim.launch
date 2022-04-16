@@ -40,7 +40,7 @@
     <param name="rate" value="0.33"/>
   </node>
 
-  <node pkg="voxblox_ros" type="tsdf_server" name="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
+  <node pkg="voxblox_ros" type="tsdf_server" name="voxblox_node" output="screen" clear_params="true">
     <!--<remap from="pointcloud" to="/camera/depth_registered/points_filtered"/>-->
     <remap from="pointcloud" to="/camera/depth_masked/points_filtered"/>
     <param name="tsdf_voxel_size" value="0.004" />
