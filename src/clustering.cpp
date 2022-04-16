@@ -35,6 +35,7 @@ euclideanClusterExtraction(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std:
   return all_clusters;
 }
 
+/*
 std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>
 experimentalClustering(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std::vector<pcl::PointIndices> &cluster_indices_out)
 {
@@ -81,15 +82,13 @@ experimentalClustering(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std::vec
 bool
 experimentalClusteringCondition(const pcl::PointXYZRGBNormal& point_a, const pcl::PointXYZRGBNormal& point_b, float squared_distance)
 {
-  /*
-  Eigen::Map<const Eigen::Vector3f> point_a_normal = point_a.getNormalVector3fMap(), point_b_normal = point_b.getNormalVector3fMap();
-  printf("%f ", std::abs(point_a_normal.dot(point_b_normal)));
-  if (std::abs(point_a_normal.dot(point_b_normal)) > 0.9)
-  {
-    return true;
-  }
-  return false;
-  */
+  //Eigen::Map<const Eigen::Vector3f> point_a_normal = point_a.getNormalVector3fMap(), point_b_normal = point_b.getNormalVector3fMap();
+  //printf("%f ", std::abs(point_a_normal.dot(point_b_normal)));
+  //if (std::abs(point_a_normal.dot(point_b_normal)) > 0.9)
+  //{
+  //  return true;
+  /}
+  //return false;
 
   Eigen::Map<const Eigen::Vector3f> point_a_normal = point_a.getNormalVector3fMap(), point_b_normal = point_b.getNormalVector3fMap();
   Eigen::Vector3f d = point_a.getVector3fMap() - point_b.getVector3fMap();
@@ -102,6 +101,7 @@ experimentalClusteringCondition(const pcl::PointXYZRGBNormal& point_a, const pcl
   }
   return false;
 }
+*/
 
 
 // copied & modified from https://pointclouds.org/documentation/region__growing_8hpp_source.html

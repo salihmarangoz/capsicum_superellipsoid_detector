@@ -9,6 +9,18 @@ In case of some projects disappear.
 
 
 
+## Related Publications
+
+- Lehnert, Christopher, et al. "Sweet pepper pose detection and grasping for automated crop harvesting." *2016 IEEE international conference on robotics and automation (ICRA)*. IEEE, 2016. [PDF](https://eprints.qut.edu.au/95756/18/capsicum_pose_estimation_and_grasping.pdf)
+- Hitomi, Eduardo E., Jorge VL Silva, and Guilherme Ruppert. "3D scanning using RGBD imaging devices: A survey." *Developments in Medical Image Processing and Computational Vision*. Springer, Cham, 2015. 379-395.
+- Traa, Johannes. "Least-squares intersection of lines." *University of Illinois Urbana-Champaign (UIUC)* (2013). [PDF](https://silo.tips/download/least-squares-intersection-of-lines)
+- Pirovano, Michele. "Kinfu–an open source implementation of Kinect Fusion+ case study: implementing a 3D scanner with PCL." *UniMi, Tech. Rep.* (2012). [PDF](https://ais-lab.di.unimi.it/Teaching/AdvancedIntelligentSystems/Old/IntelligentSystems_2014_2015/Documents/PirovanoMichele-VisualReconstructionReport.pdf)
+- Pilu, Maurizio, and Robert B. Fisher. "Equal-distance sampling of superellipse models." (1995): 257-266. [PDF](https://www.researchgate.net/profile/Robert-Fisher-3/publication/2710500_Equal-Distance_Sampling_of_Superellipse_Models/links/0fcfd50f59aec76f5b000000/Equal-Distance-Sampling-of-Superellipse-Models.pdf)
+- Ferreira, Paulo. "Sampling Superquadric Point Clouds with Normals." *arXiv preprint arXiv:1802.05176* (2018). [PDF](https://arxiv.org/pdf/1802.05176.pdf)
+- Jaklič, Aleš, Aleš Leonardis, and Franc Solina. "Superquadrics and their geometric properties." *Segmentation and recovery of superquadrics*. Springer, Dordrecht, 2000. 13-39. [PDF](https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
+
+
+
 ## Weekly Meeting Notes
 
 **Note:** Some meeting notes are missing. Some meetings are canceled because of exams, collecting data on-site, implementations needs more than a week, etc. 
@@ -30,9 +42,7 @@ To-Do list before closing the project:
 
 - [ ] add fixed parameters (e.g. macro, difficult to implement with ros parameters, etc.)
 
-- [ ] add list of contributions to the readme?
-
-- [ ] what to do with experimental clustering? it didn't work well... I will probably delete it.
+- [x] what to do with experimental clustering? it didn't work well... I will probably delete it.
 
 - [ ] fix the problem with simulator launch file. add this to `start_sim.launch` or implement this in Python or C++? I will probably add it to the launch files because this project doesn't aim segmenting depth camera data.
 
@@ -43,7 +53,7 @@ To-Do list before closing the project:
     </node>
     ```
 
-- [ ] clean git history from pdf and ipynb files. publishing the project in a public repository with research PDF's and old ipynb files with embedded videos in history is a not a good idea. (see: bfg-repo-cleaner)
+- [x] clean git history from pdf and ipynb files. publishing the project in a public repository with research PDF's and old ipynb files with embedded videos in history is a not a good idea. (see: bfg-repo-cleaner)
 
 - [ ] compile the project in a VM with fresh Ubuntu for missing dependencies, etc.
 

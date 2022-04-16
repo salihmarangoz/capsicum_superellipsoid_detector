@@ -16,11 +16,13 @@ namespace clustering
 std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> 
 euclideanClusterExtraction(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std::vector<pcl::PointIndices> &cluster_indices_out, float cluster_tolerance, int min_cluster_size, int max_cluster_size);
 
+/*
 std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>
 experimentalClustering(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std::vector<pcl::PointIndices> &cluster_indices_out);
 
 bool
 experimentalClusteringCondition(const pcl::PointXYZRGBNormal& point_a, const pcl::PointXYZRGBNormal& point_b, float squared_distance);
+*/
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 getColoredCloud (pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, std::vector<pcl::PointIndices> &cluster_indices_in);
