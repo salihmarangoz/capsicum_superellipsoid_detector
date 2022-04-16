@@ -1,6 +1,20 @@
 # Capsicum Superellipsoid Detector (ROS1)
 
-**TOC TODO**
+**Table of Contents**
+
+* [Introduction](#introduction)
+* [Installation](#installation)
+   * [Related Packages](#related-packages)
+   * [Package Dependencies](#package-dependencies)
+   * [Compile](#compile)
+* [Running](#running)
+* [ROS Topics, Transforms, and Services](#ros-topics-transforms-and-services)
+   * [Parameters](#parameters)
+   * [Subscribed Topics](#subscribed-topics)
+   * [Published Topics](#published-topics)
+   * [Transforms](#transforms)
+   * [Services](#services)
+* [Future Work](#future-work)
 
 Author: Salih Marangoz - s6samara@uni-bonn.de
 
@@ -8,15 +22,19 @@ Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tob
 
 ## Introduction
 
-Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views about all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating shapes of fruits by fitting superellipsoids. The detector node applies Euclidean Clustering to the input point cloud for fruit separation and then estimates fruit centers by utilizing surface normals. Afterward, superellipsoids are matched to the clustered points with a non-linear least-squares approach using some priors (estimated center, superellipsoid scaling constraints).
+Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views about all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating shapes of fruits by fitting superellipsoids. The ROS node applies; 
 
-- Youtube Link: https://www.youtube.com/watch?v=kX0oy-pKSh4
+- Euclidean Clustering to the input point cloud for fruit separation,
+- Computes surface normals then estimates fruit centers with the least-squares intersection of lines approach,
+- Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints).
+
+[Youtube video link](https://www.youtube.com/watch?v=kX0oy-pKSh4) for the demo of this project: 
 
 [![](https://img.youtube.com/vi/kX0oy-pKSh4/0.jpg)](https://www.youtube.com/watch?v=kX0oy-pKSh4)
 
-- Meetings notes (for HiWi) can be found [here](MEETING_NOTES.md).
+Meeting notes (for HiWi) can be found [here](MEETING_NOTES.md).
 
-- Some prototypes and experiments (implemented in Python) can be found below. Selected ideas are already implemented in C++:
+Some prototypes and experiments (implemented in Python) can be found below. Selected ideas are already implemented in C++:
 
 | Related File                                                 | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |

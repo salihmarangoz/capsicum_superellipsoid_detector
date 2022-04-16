@@ -1,23 +1,31 @@
-## Backup Forks
+Table of Contents
+=================
 
-In case of some projects disappear.
-
-- https://github.com/salihmarangoz/voxblox
-- https://github.com/salihmarangoz/perception_pcl (not needed for current version)
-- https://github.com/salihmarangoz/OpenChisel (not needed for current version)
-- https://github.com/salihmarangoz/DirectionalTSDF (not needed for current version)
-
-
-
-## Related Publications
-
-- Lehnert, Christopher, et al. "Sweet pepper pose detection and grasping for automated crop harvesting." *2016 IEEE international conference on robotics and automation (ICRA)*. IEEE, 2016. [PDF](https://eprints.qut.edu.au/95756/18/capsicum_pose_estimation_and_grasping.pdf)
-- Hitomi, Eduardo E., Jorge VL Silva, and Guilherme Ruppert. "3D scanning using RGBD imaging devices: A survey." *Developments in Medical Image Processing and Computational Vision*. Springer, Cham, 2015. 379-395.
-- Traa, Johannes. "Least-squares intersection of lines." *University of Illinois Urbana-Champaign (UIUC)* (2013). [PDF](https://silo.tips/download/least-squares-intersection-of-lines)
-- Pirovano, Michele. "Kinfu–an open source implementation of Kinect Fusion+ case study: implementing a 3D scanner with PCL." *UniMi, Tech. Rep.* (2012). [PDF](https://ais-lab.di.unimi.it/Teaching/AdvancedIntelligentSystems/Old/IntelligentSystems_2014_2015/Documents/PirovanoMichele-VisualReconstructionReport.pdf)
-- Pilu, Maurizio, and Robert B. Fisher. "Equal-distance sampling of superellipse models." (1995): 257-266. [PDF](https://www.researchgate.net/profile/Robert-Fisher-3/publication/2710500_Equal-Distance_Sampling_of_Superellipse_Models/links/0fcfd50f59aec76f5b000000/Equal-Distance-Sampling-of-Superellipse-Models.pdf)
-- Ferreira, Paulo. "Sampling Superquadric Point Clouds with Normals." *arXiv preprint arXiv:1802.05176* (2018). [PDF](https://arxiv.org/pdf/1802.05176.pdf)
-- Jaklič, Aleš, Aleš Leonardis, and Franc Solina. "Superquadrics and their geometric properties." *Segmentation and recovery of superquadrics*. Springer, Dordrecht, 2000. 13-39. [PDF](https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
+   * [Weekly Meeting Notes](#weekly-meeting-notes)
+      * [12-Apr-2022](#12-apr-2022)
+      * [22-Mar-2022](#22-mar-2022)
+      * [09-Mar-2022](#09-mar-2022)
+      * [02-Mar-2022](#02-mar-2022)
+      * [22-Feb-2022](#22-feb-2022)
+      * [11-Jan-2022](#11-jan-2022)
+      * [17-Dec-2021](#17-dec-2021)
+      * [02-Nov-2021](#02-nov-2021)
+      * [26-Oct-2021](#26-oct-2021)
+      * [18-Oct-2021](#18-oct-2021)
+      * [23-Sep-2021 (Postponed to 24 Sept)](#23-sep-2021-postponed-to-24-sept)
+      * [16-Sep-2021](#16-sep-2021)
+      * [9-Sep-2021 (Postponed to 10 Sept)](#9-sep-2021-postponed-to-10-sept)
+      * [2-Sep-2021](#2-sep-2021)
+      * [26-Aug-2021](#26-aug-2021)
+      * [19-Aug-2021](#19-aug-2021)
+      * [12-Aug-2021](#12-aug-2021)
+      * [05-Aug-2021](#05-aug-2021)
+      * [29-July 2021](#29-july-2021)
+      * [22-July 2021](#22-july-2021)
+      * [15-July-2021](#15-july-2021)
+      * [08-July-2021](#08-july-2021)
+   * [Backup Forks](#backup-forks)
+   * [Related Publications](#related-publications)
 
 
 
@@ -490,3 +498,27 @@ ToDo:
 Screenshots:
 
 ![](imgs/1_python_superellipsoid.png)
+
+
+
+## Backup Forks
+
+In case of some projects disappear.
+
+- https://github.com/salihmarangoz/voxblox
+- https://github.com/salihmarangoz/perception_pcl (not needed for current version)
+- https://github.com/salihmarangoz/OpenChisel (not needed for current version)
+- https://github.com/salihmarangoz/DirectionalTSDF (not needed for current version)
+
+
+
+## Related Publications
+
+- Lehnert, Christopher, et al. "Sweet pepper pose detection and grasping for automated crop harvesting." *2016 IEEE international conference on robotics and automation (ICRA)*. IEEE, 2016. [PDF](https://eprints.qut.edu.au/95756/18/capsicum_pose_estimation_and_grasping.pdf)
+- Hitomi, Eduardo E., Jorge VL Silva, and Guilherme Ruppert. "3D scanning using RGBD imaging devices: A survey." *Developments in Medical Image Processing and Computational Vision*. Springer, Cham, 2015. 379-395.
+- Traa, Johannes. "Least-squares intersection of lines." *University of Illinois Urbana-Champaign (UIUC)* (2013). [PDF](https://silo.tips/download/least-squares-intersection-of-lines)
+- Pirovano, Michele. "Kinfu–an open source implementation of Kinect Fusion+ case study: implementing a 3D scanner with PCL." *UniMi, Tech. Rep.* (2012). [PDF](https://ais-lab.di.unimi.it/Teaching/AdvancedIntelligentSystems/Old/IntelligentSystems_2014_2015/Documents/PirovanoMichele-VisualReconstructionReport.pdf)
+- Pilu, Maurizio, and Robert B. Fisher. "Equal-distance sampling of superellipse models." (1995): 257-266. [PDF](https://www.researchgate.net/profile/Robert-Fisher-3/publication/2710500_Equal-Distance_Sampling_of_Superellipse_Models/links/0fcfd50f59aec76f5b000000/Equal-Distance-Sampling-of-Superellipse-Models.pdf)
+- Ferreira, Paulo. "Sampling Superquadric Point Clouds with Normals." *arXiv preprint arXiv:1802.05176* (2018). [PDF](https://arxiv.org/pdf/1802.05176.pdf)
+- Jaklič, Aleš, Aleš Leonardis, and Franc Solina. "Superquadrics and their geometric properties." *Segmentation and recovery of superquadrics*. Springer, Dordrecht, 2000. 13-39. [PDF](https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf)
+
