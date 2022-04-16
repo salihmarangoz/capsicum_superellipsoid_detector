@@ -123,7 +123,59 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ### Parameters
 
-todo
+- **`p_cost_type`: 2**
+  $$
+  f(x,y,z) = \left[ \left |\frac{x}{a} \right|^{\frac{2}{e_2}} + \left |\frac{y}{b} \right|^{\frac{2}{e_2}} \right ]^{\frac{e_2}{e_1}} + \left |  \frac{z}{c} \right | ^\frac{2}{e_1}
+  $$
+
+  - `CostFunctionType::NAIVE = 0`
+
+  $$
+  \min_i \sum^n_{i=0} \left ( f(x_i, y_i, z_i) - 1 \right )
+  $$
+
+  - `CostFunctionType::LEHNERT = 1`
+
+  $$
+  a=1
+  $$
+
+  - `CostFunctionType::RADIALEUCLIDIAN = 2`
+
+  $$
+  a=2
+  $$
+
+  - `CostFunctionType::SOLINA = 3`
+
+  $$
+  a=1
+  $$
+
+- **`p_min_cluster_size`: 100**
+  - Discards clusters smaller than **p_min_cluster_size**.
+- **`p_max_cluster_size`: 10000**
+  - Discards clusters larger than **p_max_cluster_size**.
+- **`p_max_num_iterations`: 100**
+  - Maximum number of non-linear least-squares optimization.
+- **`p_cluster_tolerance`: 0.01**
+  - In meters. sGroups two points having smaller distance than **p_cluster_tolerance** into the same cluster.
+- **`p_estimate_normals_search_radius`: 0.015**
+  - In meters. Uses points closer than **p_estimate_normals_search_radius** for normal vector computation.
+- **`p_estimate_cluster_center_regularization`: 2.5**
+  - Regularization for intersection of lines computation. Defines bias towards mean of cluster points. Higher values brings the result towards the bias point. Useful when there are not enough surfaces.
+- **`p_pointcloud_volume_resolution`: 0.001**
+  - In meters. Resolution of **~superellipsoids_volume** message.
+- **`p_octree_volume_resolution`: 0.001**
+  - In meters. Resolution of **~superellipsoids_volume_octomap** message.
+- **`p_print_ceres_summary`: false**
+  - Prints cost, gradients, extra information, etc. for each optimization step.
+- **`p_use_fibonacci_sphere_projection_sampling`: true**
+  - If true, uses our approach for uniform-like sampling of superellipsoid.
+  - If false, uses parametric representation which is not uniform-like.
+  - See [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) for the comparsion.
+- **`p_world_frame`: "world"**
+  - World transform frame.
 
 ### Subscribed Topics
 
