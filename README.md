@@ -123,7 +123,7 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ### Parameters
 
-- **`p_cost_type`: **
+- **`p_cost_type`** **: 2**
 
   ![f](imgs/formulas/f_.png)
 
@@ -147,29 +147,62 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
   ![solina_dist](imgs/formulas/solina_dist_.png)
 
+- **`p_prior_center`: 0.1**
+
+  ![prior_center](imgs/formulas/prior_center_.png)
+
+  - Alpha value for the prior which enforces optimized center **t** and center estimated via surface normals **p** to be close to each other. Higher values increases the regularization.
+
+- **`p_prior_scaling`: 0.1**
+
+  ![prior_scaling](imgs/formulas/prior_scaling_.png)
+
+  - Beta value for the prior which enforces **a**, **b**, **c** values which defines scaling of superellipsoid to be close to each other. Higher values increases the regularization. 
+
 - **`p_min_cluster_size`: 100**
+  
   - Discards clusters smaller than **p_min_cluster_size**.
+  
 - **`p_max_cluster_size`: 10000**
+
   - Discards clusters larger than **p_max_cluster_size**.
+
 - **`p_max_num_iterations`: 100**
+
   - Maximum number of non-linear least-squares optimization.
+
 - **`p_cluster_tolerance`: 0.01**
+
   - In meters. sGroups two points having smaller distance than **p_cluster_tolerance** into the same cluster.
+
 - **`p_estimate_normals_search_radius`: 0.015**
+
   - In meters. Uses points closer than **p_estimate_normals_search_radius** for normal vector computation.
+
 - **`p_estimate_cluster_center_regularization`: 2.5**
+
   - Regularization for intersection of lines computation. Defines bias towards mean of cluster points. Higher values brings the result towards the bias point. Useful when there are not enough surfaces.
+
 - **`p_pointcloud_volume_resolution`: 0.001**
+
   - In meters. Resolution of **~superellipsoids_volume** message.
+
 - **`p_octree_volume_resolution`: 0.001**
+
   - In meters. Resolution of **~superellipsoids_volume_octomap** message.
+
 - **`p_print_ceres_summary`: false**
+
   - Prints cost, gradients, extra information, etc. for each optimization step.
+
 - **`p_use_fibonacci_sphere_projection_sampling`: true**
+
   - If true, uses our approach for uniform-like sampling of superellipsoid.
   - If false, uses parametric representation which is not uniform-like.
   - See [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) for the comparsion.
+
 - **`p_world_frame`: "world"**
+
   - World transform frame.
 
 ### Subscribed Topics
