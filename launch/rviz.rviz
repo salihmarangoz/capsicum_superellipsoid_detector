@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /XYZ + Label + Normals1
       Splitter Ratio: 0.630630612373352
     Tree Height: 1228
   - Class: rviz/Selection
@@ -153,7 +154,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.0010000000474974513
+      Size (m): 0.0020000000949949026
       Style: Spheres
       Topic: /capsicum_superellipsoid_detector/superellipsoids_surface
       Unreliable: false
@@ -317,7 +318,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.5405842065811157
+      Distance: 0.36576253175735474
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -325,17 +326,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.00905233807861805
-        Y: 0.5314586162567139
-        Z: 0.3819134533405304
+        X: 0.05126986280083656
+        Y: 0.5109201073646545
+        Z: 0.4579217731952667
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.46980077028274536
+      Pitch: 0.44980090856552124
       Target Frame: <Fixed Frame>
-      Yaw: 5.09540319442749
+      Yaw: 5.78922700881958
     Saved: ~
 Window Geometry:
   Displays:

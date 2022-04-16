@@ -615,29 +615,29 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
   switch (cost_type)
   {
     case CostFunctionType::NAIVE:
-      // 1) FAILED. Naive solution using implicit definition of the superellipsoid
+      // 0) FAILED. Naive solution using implicit definition of the superellipsoid
       //    Doesn't fit well
       residual[0] = f1 - 1.;
       break;
     case CostFunctionType::LEHNERT:
-      // 2) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+      // 1) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
       //    Have problems while optimizing rotations. also the cost function looks double squared.
       //    "Grasp Rotation from Crop" step is not applied since we lack data points and also fruits are vertical in general.
       residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
       break;
     case CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE:
-      // 3) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
+      // 2) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
       //    Fits well enough even though this is not a super good approximation inside of the shape
       residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.)); // remove abs?
       break;
     case CostFunctionType::SOLINA:
-      // 4) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+      // 3) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
       //    Fits well enough.
       residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.); // remove abs?
       break;
     case CostFunctionType::SOLINA_DISTANCE:
-      // 4) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-      //    Fits well enough.
+      // 4) FAILED. SOLINA without sqrt(abc)
+      //    Doesn't work well.
       residual[0] = abs(pow(f1,e1/2.) - 1.); // remove abs?
       break;
   }

@@ -16,7 +16,7 @@
     <param name="p_pointcloud_volume_resolution" value="0.001"/>
     <param name="p_octree_volume_resolution" value="0.001"/>
     <param name="p_print_ceres_summary" value="false"/>
-    <param name="p_use_fibonacci_sphere_projection_sampling" value="false"/>
+    <param name="p_use_fibonacci_sphere_projection_sampling" value="true"/>
     <param name="p_world_frame" value="world"/>
   </node>
 
