@@ -46,13 +46,11 @@ To-Do list before closing the project:
 
 - [ ] add an example bag file (with a single pointcloud)
 
-- [ ] add ros parameters (needs to be implemented first)
-
-- [ ] add fixed parameters (e.g. macro, difficult to implement with ros parameters, etc.)
+- [x] add ros parameters (needs to be implemented first)
 
 - [x] what to do with experimental clustering? it didn't work well... I will probably delete it.
 
-- [ ] fix the problem with simulator launch file. add this to `start_sim.launch` or implement this in Python or C++? I will probably add it to the launch files because this project doesn't aim segmenting depth camera data.
+- [x] fix the problem with simulator launch file. add this to `start_sim.launch` or implement this in Python or C++? I will probably add it to the launch files because this project doesn't aim segmenting depth camera data.
 
   - ```xml
     <node pkg="pointcloud_roi" type="filter_red_clusters_node" name="detect_roi">

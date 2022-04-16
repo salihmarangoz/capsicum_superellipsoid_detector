@@ -7,6 +7,13 @@
     <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
   </node>
 
+  <node pkg="pointcloud_roi" type="filter_red_clusters_node" name="detect_roi_noisy">
+    <remap from="~input" to="/camera/depth/points_noisy" />
+    <remap from="~roi_cloud" to="/detect_roi_noisy/roi_cloud" />
+    <remap from="~nonroi_cloud" to="/detect_roi_noisy/nonroi_cloud" />
+    <remap from="~map_frame" to="/roi_viewpoint_planner/map_frame" />´
+  </node>
+
   <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
     <param name="queue_size" value="300"/>
     <param name="exact_sync" value="false"/>
@@ -28,7 +35,7 @@
   </node>
 
   <node pkg="nodelet" type="nodelet" name="statistical_filter" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
-    <remap from="~input" to="/detect_roi/roi_cloud"/>
+    <remap from="~input" to="/detect_roi_noisy/roi_cloud"/>
     <remap from="~output" to="/camera/depth_masked/points_filtered"/>
     <param name="mean_k" value="5"/>
     <param name="stddev" value="0.01"/>
