@@ -125,27 +125,27 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`p_cost_type`: **
 
-  <img src="imgs/formulas/f.png" alt="f" style="zoom:50%;" />
+  ![f](imgs/formulas/f_.png)
 
   - `CostFunctionType::NAIVE = 0`
 
-  <img src="imgs/formulas/naive.png" alt="naive" style="zoom:50%;" />
+  ![naive](imgs/formulas/naive_.png)
 
   - `CostFunctionType::LEHNERT = 1`
 
-  <img src="imgs/formulas/lenhert.png" alt="lenhert" style="zoom:50%;" />
+  ![lenhert](imgs/formulas/lenhert_.png)
 
   - `CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE = 2`
 
-  <img src="imgs/formulas/radial.png" alt="radial" style="zoom:50%;" />
+  ![radial](imgs/formulas/radial_.png)
 
   - `CostFunctionType::SOLINA = 3`
 
-  <img src="imgs/formulas/solina.png" alt="solina" style="zoom:50%;" />
+  ![solina](imgs/formulas/solina_.png)
 
   - `CostFunctionType::SOLINA_DISTANCE = 4`
 
-  <img src="imgs/formulas/solina_dist.png" alt="solina_dist" style="zoom:50%;" />
+  ![solina_dist](imgs/formulas/solina_dist_.png)
 
 - **`p_min_cluster_size`: 100**
   - Discards clusters smaller than **p_min_cluster_size**.
