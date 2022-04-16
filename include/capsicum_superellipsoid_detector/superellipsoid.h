@@ -24,6 +24,14 @@
 namespace superellipsoid
 {
 
+enum CostFunctionType{
+  NAIVE=0,
+  LEHNERT=1,
+  RADIAL_EUCLIDIAN_DISTANCE=2,
+  SOLINA=3,
+  SOLINA_DISTANCE=4
+};
+
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
 using ceres::Problem;
@@ -41,7 +49,7 @@ public:
   pcl::PointXYZ getEstimatedCenter();
   typename pcl::PointCloud<PointT>::Ptr getCloud();
   pcl::PointCloud<pcl::Normal>::Ptr getNormals();
-  bool fit(bool log_to_stdout, int max_num_iterations=100);
+  bool fit(bool log_to_stdout, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // If you are creating the object with Superellipsoid ROS message then don't use the methods defined above unless specifying "cloud_in"
@@ -70,7 +78,7 @@ public:
 
 
 struct SuperellipsoidError {
-  SuperellipsoidError(double x_, double y_, double z_, double *priors_);
+  SuperellipsoidError(double x_, double y_, double z_, double *priors_, CostFunctionType cost_type_, double prior_center_, double prior_scaling_);
 
   template <typename T> bool operator()(const T* const parameters, T* residual) const;
 
@@ -79,9 +87,12 @@ struct SuperellipsoidError {
   static ceres::CostFunction* Create(const double x,
                                      const double y,
                                      const double z,
-                                     double* const priors) {
+                                     double* const priors,
+                                     const CostFunctionType cost_type,
+                                     const double prior_center,
+                                     const double prior_scaling) {
     return (new ceres::AutoDiffCostFunction<SuperellipsoidError, 3, 11>( // residual_size, parameters_size
-        new SuperellipsoidError(x, y, z, priors)));
+        new SuperellipsoidError(x, y, z, priors, cost_type, prior_center, prior_scaling)));
   }
 
  private:
@@ -89,6 +100,9 @@ struct SuperellipsoidError {
   const double y;
   const double z;
   const double *priors;
+  const CostFunctionType cost_type;
+  const double prior_center;
+  const double prior_scaling;
 };
 
 
@@ -231,7 +245,7 @@ pcl::PointXYZ Superellipsoid<PointT>::estimateClusterCenter(float regularization
 
 
 template <typename PointT>
-bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations)
+bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, CostFunctionType cost_type, double prior_center, double prior_scaling)
 {
   parameters_ptr->resize(16);
   auto parameters = (*parameters_ptr).data();
@@ -259,7 +273,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations)
   Problem problem;
   for (size_t i=0; i<cloud_in->size(); i++) {
     auto point_ = cloud_in->at(i).getVector3fMap();
-    CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors);
+    CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors, cost_type, prior_center, prior_scaling);
     //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.2), parameters); // loss todo
     problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
   }
@@ -556,7 +570,7 @@ double Superellipsoid<PointT>::computeVolume() const
 // ----------------------------------------------------------------------------------
 
 
-inline SuperellipsoidError::SuperellipsoidError(double x_, double y_, double z_, double *priors_) : x(x_), y(y_), z(z_), priors(priors_){}
+inline SuperellipsoidError::SuperellipsoidError(double x_, double y_, double z_, double *priors_, CostFunctionType cost_type_, double prior_center_, double prior_scaling_) : x(x_), y(y_), z(z_), priors(priors_), cost_type(cost_type_), prior_center(prior_center_), prior_scaling(prior_scaling_) {}
 
 
 template <typename T> bool SuperellipsoidError::operator()(const T* const parameters, T* residual) const
@@ -598,29 +612,39 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 
   /////////////////////////// Cost /////////////////////////////////////
   const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
+  switch (cost_type)
+  {
+    case CostFunctionType::NAIVE:
+      // 1) FAILED. Naive solution using implicit definition of the superellipsoid
+      //    Doesn't fit well
+      residual[0] = f1 - 1.;
+      break;
+    case CostFunctionType::LEHNERT:
+      // 2) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+      //    Have problems while optimizing rotations. also the cost function looks double squared.
+      //    "Grasp Rotation from Crop" step is not applied since we lack data points and also fruits are vertical in general.
+      residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
+      break;
+    case CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE:
+      // 3) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
+      //    Fits well enough even though this is not a super good approximation inside of the shape
+      residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.)); // remove abs?
+      break;
+    case CostFunctionType::SOLINA:
+      // 4) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+      //    Fits well enough.
+      residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.); // remove abs?
+      break;
+    case CostFunctionType::SOLINA_DISTANCE:
+      // 4) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
+      //    Fits well enough.
+      residual[0] = abs(pow(f1,e1/2.) - 1.); // remove abs?
+      break;
+  }
 
-  // 1) FAILED. Naive solution using implicit definition of the superellipsoid
-  //    Doesn't fit well
-  //residual[0] = f1 - 1.;
-
-  // 2) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-  //    Have problems while optimizing rotations. also the cost function looks double squared.
-  //residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
-
-  // 3) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
-  //    Fits well enough even though this is not a super good approximation.
-  residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.));
-
-  // 4) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-  //    Fits well enough. Enable other priors to fit data well with limited views.
-  //residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.);
-
-  /////////////////////////// Prior/Regularization /////////////////////////////////////
-  // EXPERIMENTAL !!!!
-  const double C = 0.1;
-  residual[1] =  C * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
-  const double D = 0.1;
-  residual[2] = D * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
+  /////////////////////////// Priors /////////////////////////////////////
+  residual[1] =  prior_center * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
+  residual[2] = prior_scaling * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
 
   return true;
 }

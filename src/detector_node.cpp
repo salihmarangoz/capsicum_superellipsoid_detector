@@ -28,8 +28,8 @@
 #include <pcl/point_cloud.h>
 
 // ros params
-int p_min_cluster_size, p_max_cluster_size, p_max_num_iterations;
-double p_cluster_tolerance, p_estimate_normals_search_radius, p_estimate_cluster_center_regularization, p_pointcloud_volume_resolution, p_octree_volume_resolution;
+int p_min_cluster_size, p_max_cluster_size, p_max_num_iterations, p_cost_type;
+double p_cluster_tolerance, p_estimate_normals_search_radius, p_estimate_cluster_center_regularization, p_pointcloud_volume_resolution, p_octree_volume_resolution, p_prior_scaling, p_prior_center;
 bool p_print_ceres_summary, p_use_fibonacci_sphere_projection_sampling;
 std::string p_world_frame;
 
@@ -63,7 +63,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
   pcl::removeNaNFromPointCloud(*pc_pcl, *pc_pcl, *indices);
 
-  ROS_INFO("Number of data points: %d", pc_pcl->size());
+  ROS_INFO("Number of data points: %lu", pc_pcl->size());
 
   if (pc_pcl->size() < p_min_cluster_size)
   {
@@ -110,7 +110,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> converged_superellipsoids;
   for (const auto &current_superellipsoid : superellipsoids)
   {
-    if ( current_superellipsoid->fit(p_print_ceres_summary, p_max_num_iterations) )
+    if ( current_superellipsoid->fit(p_print_ceres_summary, p_max_num_iterations, (superellipsoid::CostFunctionType)(p_cost_type)) )
     { // if converged
       converged_superellipsoids.push_back(current_superellipsoid);
     }
@@ -348,6 +348,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle priv_nh("~");
 
+  priv_nh.param("p_cost_type", p_cost_type, (int)superellipsoid::CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE);
   priv_nh.param("p_min_cluster_size", p_min_cluster_size, 100);
   priv_nh.param("p_max_cluster_size", p_max_cluster_size, 10000);
   priv_nh.param("p_max_num_iterations", p_max_num_iterations, 100);
@@ -356,6 +357,8 @@ int main(int argc, char **argv)
   priv_nh.param("p_estimate_cluster_center_regularization", p_estimate_cluster_center_regularization, 2.5);
   priv_nh.param("p_pointcloud_volume_resolution", p_pointcloud_volume_resolution, 0.001);
   priv_nh.param("p_octree_volume_resolution", p_octree_volume_resolution, 0.001);
+  priv_nh.param("p_prior_scaling", p_prior_scaling, 0.1);
+  priv_nh.param("p_prior_center", p_prior_center, 0.1);
   priv_nh.param("p_print_ceres_summary", p_print_ceres_summary, false);
   priv_nh.param("p_use_fibonacci_sphere_projection_sampling", p_use_fibonacci_sphere_projection_sampling, true);
   priv_nh.param<std::string>("p_world_frame", p_world_frame, "world");
