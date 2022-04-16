@@ -17,7 +17,7 @@
     <remap from="input_detection" to="/agrobot_mrcnn_ros_node/detections"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="cloudify" args="standalone depth_image_proc/point_cloud_xyzrgb">
+  <node pkg="nodelet" type="nodelet" name="cloudify" output="screen" args="standalone depth_image_proc/point_cloud_xyzrgb">
     <param name="queue_size" value="300"/>
     <param name="exact_sync" value="false"/>
     <remap from="depth_registered/image_rect" to="/roi_depth"/>
@@ -26,7 +26,7 @@
     <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="cloudify_full" args="standalone depth_image_proc/point_cloud_xyzrgb">
+  <node pkg="nodelet" type="nodelet" name="cloudify_full" output="screen" args="standalone depth_image_proc/point_cloud_xyzrgb">
     <param name="queue_size" value="300"/>
     <param name="exact_sync" value="false"/>
     <remap from="depth_registered/image_rect" to="/camera/aligned_depth_to_color/image_raw"/>
@@ -35,7 +35,7 @@
     <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="statistical_filter" args="standalone pcl/StatisticalOutlierRemoval">
+  <node pkg="nodelet" type="nodelet" name="statistical_filter" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
     <remap from="~input" to="/camera/depth_masked/points"/>
     <remap from="~output" to="/camera/depth_masked/points_filtered"/>
     <param name="mean_k" value="11"/>
@@ -43,7 +43,7 @@
     <param name="negative" value="false"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="statistical_filter_full" args="standalone pcl/StatisticalOutlierRemoval">
+  <node pkg="nodelet" type="nodelet" name="statistical_filter_full" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
     <remap from="~input" to="/camera/depth/points"/>
     <remap from="~output" to="/camera/depth/points_filtered"/>
     <param name="mean_k" value="7"/>

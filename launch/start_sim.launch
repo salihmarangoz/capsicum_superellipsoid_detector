@@ -7,7 +7,7 @@
     <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb">
+  <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
     <param name="queue_size" value="300"/>
     <param name="exact_sync" value="false"/>
     <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
@@ -18,7 +18,7 @@
 
   <node pkg="capsicum_superellipsoid_detector" type="simulate_depth_noise.py" name="simulate_depth_noise" output="screen"></node>
 
-  <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb2" args="standalone depth_image_proc/point_cloud_xyzrgb">
+  <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb2" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
     <param name="queue_size" value="300"/>
     <param name="exact_sync" value="false"/>
     <remap from="rgb/camera_info" to="/camera/color/camera_info"/>
