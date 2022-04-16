@@ -251,3 +251,4 @@ There are no services for the written node. But voxblox needs a `std_srvs/Empty`
 - 3D mapping with Instance segmentation. Mapping with masking pointcloud impacts the quality.
 - Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
 - Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.
+- Loss functions can be used against outliers: http://ceres-solver.org/nnls_modeling.html#lossfunction

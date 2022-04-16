@@ -44,7 +44,7 @@ To-Do list before closing the project:
 - [ ] missing parts of the fruit:
   - I have added `superellipsoid_fibonacci_projection_sampling.ipynb` and found that projection fibonacci sphere onto a superellipsoid is **a pretty good solution** (image can be found above). I will combine this idea with `find_missing_part_of_spherical_data.ipynb` for extracting missing parts of the scanned fruits.
 
-- [ ] add an example bag file (with a single pointcloud)
+- [x] add an example bag file (with a single pointcloud)
 
 - [x] add ros parameters (needs to be implemented first)
 
