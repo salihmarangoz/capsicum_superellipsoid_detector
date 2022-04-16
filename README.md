@@ -1,6 +1,6 @@
 # Capsicum Superellipsoid Detector (ROS1)
 
-![demo](imgs/demo.png)
+![demo](imgs/demo.gif)
 
 **Table of Contents**
 
