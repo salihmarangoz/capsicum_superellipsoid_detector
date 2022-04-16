@@ -74,7 +74,7 @@ class MaskFilter():
         # Add salt and pepper noise for zero pixels
         saltpepper_prob = 0.003
         mask2 = np.random.choice(2, mask1.shape, p=[1-saltpepper_prob, saltpepper_prob])
-        mask3 = np.bitwise_and(mask1, mask2).astype(np.bool)
+        mask3 = np.bitwise_and(mask1, mask2).astype(bool)
         randdist = np.random.randint(10000, size=mask3.sum())
         depth_uint[mask3] = randdist
 
