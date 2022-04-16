@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Superellipsoids Surface1
       Splitter Ratio: 0.630630612373352
     Tree Height: 1228
   - Class: rviz/Selection
@@ -188,7 +189,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -203,18 +204,18 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
+        Max Value: 0.6172892451286316
+        Min Value: 0.5208770632743835
         Value: true
       Axis: Z
       Channel Name: z
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color Transformer: AxisColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -225,7 +226,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.0010000000474974513
+      Size (m): 0.003000000026077032
       Style: Spheres
       Topic: /capsicum_superellipsoid_detector/superellipsoids_surface
       Unreliable: false
@@ -389,7 +390,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.27938777208328247
+      Distance: 1.8632339239120483
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -397,17 +398,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.16929107904434204
-        Y: 0.4897024929523468
-        Z: 0.49409401416778564
+        X: 0.17542222142219543
+        Y: 0.4917689561843872
+        Z: 0.5910103917121887
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3848007321357727
+      Pitch: 0.4298016130924225
       Target Frame: <Fixed Frame>
-      Yaw: 6.123562812805176
+      Yaw: 0.7322195172309875
     Saved: ~
 Window Geometry:
   Displays:

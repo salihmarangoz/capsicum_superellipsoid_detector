@@ -2,6 +2,7 @@
 #include "capsicum_superellipsoid_detector/superellipsoid.h"
 #include "capsicum_superellipsoid_detector/clustering.h"
 
+#include <chrono>
 #include <ros/ros.h>
 //#include <message_filters/subscriber.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -26,6 +27,12 @@
 #include <octomap_vpp/octomap_pcl.h>
 #include <pcl/point_cloud.h>
 
+// ros params
+int p_min_cluster_size, p_max_cluster_size, p_max_num_iterations;
+double p_cluster_tolerance, p_estimate_normals_search_radius, p_estimate_cluster_center_regularization, p_pointcloud_volume_resolution, p_octree_volume_resolution;
+bool p_print_ceres_summary, p_use_fibonacci_sphere_projection_sampling;
+std::string p_world_frame;
+
 // globals
 ros::Publisher superellipsoids_pub,
     clusters_pub,
@@ -41,11 +48,12 @@ std::unique_ptr<tf::TransformListener> listener;
 
 void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
 {
-  ROS_INFO_ONCE("Pointcloud received...");
+  ROS_INFO("Pointcloud received...");
 
   /////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////// PREPROCESSING //////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
+  auto t_start_preprocessing = std::chrono::high_resolution_clock::now();
 
   // Convert to PCL Pointcloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -55,25 +63,68 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
   pcl::removeNaNFromPointCloud(*pc_pcl, *pc_pcl, *indices);
 
-  // Transform pointcloud to the world frame
-  pcl_ros::transformPointCloud("world", *pc_pcl, *pc_pcl, *listener); // todo: parametric world_frame
-  std_msgs::Header pc_pcl_tf_ros_header = pcl_conversions::fromPCL(pc_pcl->header);
-  if (pc_pcl->size() == 0)
+  ROS_INFO("Number of data points: %d", pc_pcl->size());
+
+  if (pc_pcl->size() < p_min_cluster_size)
   {
-    ROS_WARN("pc_pcl_tf->size() == 0");
+    ROS_WARN("pc_pcl->size() < p_min_cluster_size");
+    ROS_WARN("====== Callback finished! =======");
     return;
   }
 
+  // Transform pointcloud to the world frame
+  pcl_ros::transformPointCloud(p_world_frame, *pc_pcl, *pc_pcl, *listener);
+  std_msgs::Header pc_pcl_tf_ros_header = pcl_conversions::fromPCL(pc_pcl->header);
+
+  auto t_end_preprocessing = std::chrono::high_resolution_clock::now();
   /////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////// CLUSTERING /////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
+  auto t_start_clustering = std::chrono::high_resolution_clock::now();
 
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices;
-  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, 0.010, 100, 10000);
+  std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::euclideanClusterExtraction(pc_pcl, cluster_indices, p_cluster_tolerance, p_min_cluster_size, p_max_cluster_size);
   //std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> clusters = clustering::experimentalClustering(pc_pcl, cluster_indices);
 
-  // (TODO) HERE <-- CHECK IF FRUIT SIZE MAKES SENSE. OTHERWISE SPLIT OR DISCARD
+  // TODO: CHECK IF FRUIT SIZE MAKES SENSE. OTHERWISE SPLIT OR DISCARD
+
+  // Initialize superellipsoids
+  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> superellipsoids;
+  for (const auto& current_cluster_pc : clusters)
+  {
+    auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>(current_cluster_pc);
+    new_superellipsoid->estimateNormals(p_estimate_normals_search_radius); // search_radius
+    new_superellipsoid->estimateClusterCenter(p_estimate_cluster_center_regularization); // regularization
+    new_superellipsoid->flipNormalsTowardsClusterCenter();
+    superellipsoids.push_back(new_superellipsoid);
+  }
+
+  auto t_end_clustering = std::chrono::high_resolution_clock::now();
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// OPTIMIZATION ///////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  auto t_start_optimization = std::chrono::high_resolution_clock::now();
+
+  // Optimize Superellipsoids
+  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> converged_superellipsoids;
+  for (const auto &current_superellipsoid : superellipsoids)
+  {
+    if ( current_superellipsoid->fit(p_print_ceres_summary, p_max_num_iterations) )
+    { // if converged
+      converged_superellipsoids.push_back(current_superellipsoid);
+    }
+    else
+    {
+      ROS_WARN("Optimization failed for a cluster!");
+    }
+  }
+
+  auto t_end_optimization = std::chrono::high_resolution_clock::now();
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// OUTPUT /////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  auto t_start_output = std::chrono::high_resolution_clock::now();
 
   // debug: visualize clusters
   if (clusters_pub.getNumSubscribers() > 0)
@@ -83,31 +134,6 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     pcl::toROSMsg(*debug_pc, *debug_pc_ros);
     debug_pc_ros->header = pc_pcl_tf_ros_header;
     clusters_pub.publish(debug_pc_ros);
-  }
-
-  // Initialize superellipsoids
-  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> superellipsoids;
-  for (const auto& current_cluster_pc : clusters)
-  {
-    auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>(current_cluster_pc);
-    new_superellipsoid->estimateNormals(0.015); // search_radius
-    new_superellipsoid->estimateClusterCenter(2.5); // regularization
-    new_superellipsoid->flipNormalsTowardsClusterCenter();
-    superellipsoids.push_back(new_superellipsoid);
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////// OPTIMIZATION ///////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////
-
-  // Optimize Superellipsoids
-  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> converged_superellipsoids;
-  for (const auto &current_superellipsoid : superellipsoids)
-  {
-    if ( current_superellipsoid->fit(true) ) // print ceres summary
-    { // if converged
-      converged_superellipsoids.push_back(current_superellipsoid);
-    }
   }
 
   // debug: publish superellipsoids for converged superellipsoids
@@ -159,7 +185,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     pcl::PointCloud<pcl::PointXYZ>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZ>);
     for (const auto &se : converged_superellipsoids)
     {
-      *(debug_pc) += *(se->sampleSurface(true));
+      *(debug_pc) += *(se->sampleSurface(p_use_fibonacci_sphere_projection_sampling));
     }
     sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*debug_pc, *debug_pc_ros);
@@ -173,7 +199,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     pcl::PointCloud<pcl::PointXYZ>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZ>);
     for (const auto &se : converged_superellipsoids)
     {
-      *(debug_pc) += *(se->sampleVolume(0.001)); // todo
+      *(debug_pc) += *(se->sampleVolume(p_pointcloud_volume_resolution));
     }
     sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*debug_pc, *debug_pc_ros);
@@ -184,12 +210,12 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   // debug: visualize converged superellipsoids volume via octomap_vpp and include cluster idx information
   if (superellipsoids_volume_octomap_pub.getNumSubscribers() > 0)
   {
-    std::shared_ptr<octomap_vpp::CountingOcTree> countingoctree(new octomap_vpp::CountingOcTree(0.005)); // todo
+    std::shared_ptr<octomap_vpp::CountingOcTree> countingoctree(new octomap_vpp::CountingOcTree(p_octree_volume_resolution));
 
     int cluster_idx = 0;
     for (const auto &se : converged_superellipsoids)
     {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr volume_pc = se->sampleVolume(0.001); // todo
+      pcl::PointCloud<pcl::PointXYZ>::Ptr volume_pc = se->sampleVolume(p_octree_volume_resolution/3.0); // for better estimation on grids sample more dense to reduce artifacts caused by rotation
 
       for (const auto &p : *volume_pc)
       {
@@ -201,7 +227,7 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     }
 
     std::shared_ptr<octomap_msgs::Octomap> debug_octomap(new octomap_msgs::Octomap());
-    //debug_octomap->header.frame_id = "world";
+    //debug_octomap->header.frame_id = p_world_frame;
     //debug_octomap->header.stamp = ros::Time::now();
     debug_octomap->header = pc_pcl_tf_ros_header;
     octomap_msgs::fullMapToMsg(*countingoctree, *debug_octomap);
@@ -231,14 +257,14 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
       for (int i=0; i<cloud_->points.size(); i++)
       {
         visualization_msgs::Marker marker;
-        //marker.header.frame_id = "world";
+        //marker.header.frame_id = p_world_frame;
         //marker.header.stamp = ros::Time();
         marker.header = pc_pcl_tf_ros_header;
         marker.ns = "surface_normals_marker";
         marker.id = id_counter++;
         marker.type = visualization_msgs::Marker::ARROW;
         marker.action = visualization_msgs::Marker::ADD;
-        marker.color.a = 1.0; // Don't forget to set the alpha!
+        marker.color.a = 1.0;
         marker.color.r = 1.0;
         marker.color.g = 0.0;
         marker.color.b = 0.0;
@@ -296,9 +322,23 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     xyzlnormal_pub.publish(debug_pc_ros);
   }
 
-  
+  auto t_end_output = std::chrono::high_resolution_clock::now();
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// LOGGING ////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
 
-  ROS_WARN("Callback finished!");
+  double elapsed_preprocessing = std::chrono::duration<double, std::milli>(t_end_preprocessing - t_start_preprocessing).count();
+  double elapsed_clustering = std::chrono::duration<double, std::milli>(t_end_clustering - t_start_clustering).count();
+  double elapsed_optimization = std::chrono::duration<double, std::milli>(t_end_optimization - t_start_optimization).count();
+  double elapsed_output = std::chrono::duration<double, std::milli>(t_end_output - t_start_output).count();
+  double elapsed_total = elapsed_preprocessing + elapsed_clustering + elapsed_optimization + elapsed_output;
+
+  ROS_INFO("Total Elapsed Time: %f ms", elapsed_total);
+  ROS_INFO("(*) Preprocessing Time: %f ms", elapsed_preprocessing);
+  ROS_INFO("(*) Clustering Time: %f ms", elapsed_clustering);
+  ROS_INFO("(*) Optimization Time: %f ms", elapsed_optimization);
+  ROS_INFO("(*) ROS Output Computation/Publish Time: %f ms", elapsed_output);
+  ROS_WARN("====== Callback finished! =======");
 }
 
 
@@ -307,6 +347,18 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "capsicum_superellipsoid_detector_node");
   ros::NodeHandle nh;
   ros::NodeHandle priv_nh("~");
+
+  priv_nh.param("p_min_cluster_size", p_min_cluster_size, 100);
+  priv_nh.param("p_max_cluster_size", p_max_cluster_size, 10000);
+  priv_nh.param("p_max_num_iterations", p_max_num_iterations, 100);
+  priv_nh.param("p_cluster_tolerance", p_cluster_tolerance, 0.01);
+  priv_nh.param("p_estimate_normals_search_radius", p_estimate_normals_search_radius, 0.015);
+  priv_nh.param("p_estimate_cluster_center_regularization", p_estimate_cluster_center_regularization, 2.5);
+  priv_nh.param("p_pointcloud_volume_resolution", p_pointcloud_volume_resolution, 0.001);
+  priv_nh.param("p_octree_volume_resolution", p_octree_volume_resolution, 0.001);
+  priv_nh.param("p_print_ceres_summary", p_print_ceres_summary, false);
+  priv_nh.param("p_use_fibonacci_sphere_projection_sampling", p_use_fibonacci_sphere_projection_sampling, true);
+  priv_nh.param<std::string>("p_world_frame", p_world_frame, "world");
 
   listener = std::make_unique<tf::TransformListener>();
 

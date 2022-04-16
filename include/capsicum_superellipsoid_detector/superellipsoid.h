@@ -41,7 +41,7 @@ public:
   pcl::PointXYZ getEstimatedCenter();
   typename pcl::PointCloud<PointT>::Ptr getCloud();
   pcl::PointCloud<pcl::Normal>::Ptr getNormals();
-  bool fit(bool log_to_stdout);
+  bool fit(bool log_to_stdout, int max_num_iterations=100);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // If you are creating the object with Superellipsoid ROS message then don't use the methods defined above unless specifying "cloud_in"
@@ -231,7 +231,7 @@ pcl::PointXYZ Superellipsoid<PointT>::estimateClusterCenter(float regularization
 
 
 template <typename PointT>
-bool Superellipsoid<PointT>::fit(bool log_to_stdout)
+bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations)
 {
   parameters_ptr->resize(16);
   auto parameters = (*parameters_ptr).data();
@@ -272,8 +272,8 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout)
   problem.SetParameterLowerBound(parameters, 4, 0.3); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
 
   Solver::Options options;
-  options.max_num_iterations = 100; // todo
-  options.num_threads = 2; // can be good with SMT on modern CPU's
+  options.max_num_iterations = max_num_iterations; // todo
+  options.num_threads = 8; // can be good with SMT on modern CPU's
   options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
   options.minimizer_progress_to_stdout = log_to_stdout;
   //options.check_gradients = true; // ???
