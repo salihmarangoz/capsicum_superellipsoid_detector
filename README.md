@@ -123,34 +123,29 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ### Parameters
 
-- **`p_cost_type`: 2**
-  $$
-  f(x,y,z) = \left[ \left |\frac{x}{a} \right|^{\frac{2}{e_2}} + \left |\frac{y}{b} \right|^{\frac{2}{e_2}} \right ]^{\frac{e_2}{e_1}} + \left |  \frac{z}{c} \right | ^\frac{2}{e_1}
-  $$
+- **`p_cost_type`: **
+
+  ![f](imgs/formulas/f.png)
 
   - `CostFunctionType::NAIVE = 0`
 
-  $$
-  \min_i \sum^n_{i=0} \left ( f(x_i, y_i, z_i) - 1 \right )
-  $$
+  ![naive](imgs/formulas/naive.png)
 
   - `CostFunctionType::LEHNERT = 1`
 
-  $$
-  a=1
-  $$
+  ![lenhert](imgs/formulas/lenhert.png)
 
-  - `CostFunctionType::RADIALEUCLIDIAN = 2`
+  - `CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE = 2`
 
-  $$
-  a=2
-  $$
+  ![radial](imgs/formulas/radial.png)
 
   - `CostFunctionType::SOLINA = 3`
 
-  $$
-  a=1
-  $$
+  ![solina](imgs/formulas/solina.png)
+
+  - `CostFunctionType::SOLINA_DISTANCE = 4`
+
+  ![solina_dist](imgs/formulas/solina_dist.png)
 
 - **`p_min_cluster_size`: 100**
   - Discards clusters smaller than **p_min_cluster_size**.

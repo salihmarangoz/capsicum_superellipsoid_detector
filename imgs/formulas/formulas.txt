@@ -1,0 +1,26 @@
+rendered via: https://latexeditor.lagrida.com/
+
+f:
+
+f(x,y,z) = \left[ \left |\frac{x}{a} \right|^{\frac{2}{e_2}} + \left |\frac{y}{b} \right|^{\frac{2}{e_2}} \right ]^{\frac{e_2}{e_1}} + \left |  \frac{z}{c} \right | ^\frac{2}{e_1}
+
+naive:
+
+\min_i \sum^n_{i=0} \left ( f(x_i, y_i, z_i) - 1 \right )^2
+
+lenhert:
+
+\min_i \sum^n_{i=0} \left ( \sqrt{abc} \left (  f(x_i, y_i, z_i)^{e_1} - 1 \right ) \right)^2
+
+radial euclidean:
+
+\min_i \sum^n_{i=0} \left ( \sqrt{x^2+y^2+z^2} \left (  f(x_i, y_i, z_i)^{-\frac{e1}{2}} - 1 \right ) \right)^2
+
+solina:
+
+\min_i \sum^n_{i=0} \left ( \sqrt{abc} \left (  f(x_i, y_i, z_i)^{\frac{e1}{2}} - 1 \right ) \right)^2
+
+
+solina distance:
+
+\min_i \sum^n_{i=0} \left ( \left (  f(x_i, y_i, z_i)^{\frac{e1}{2}} - 1 \right ) \right)^2
