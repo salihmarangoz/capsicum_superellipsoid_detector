@@ -199,9 +199,10 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
   - Prints cost, gradients, extra information, etc. for each optimization step.
 
-- **`p_use_fibonacci_sphere_projection_sampling`: true**
+- **`p_use_fibonacci_sphere_projection_sampling`: false**
 
-  - If true, uses our approach for uniform-like sampling of superellipsoid.
+  - This only affects the the output of **~superellipsoids_surface** message. I personaly find surface sampled with parametric representation easier to perceive.
+  - If true, uses our approach for uniform-like sampling of superellipsoid .
   - If false, uses parametric representation which is not uniform-like.
   - See [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) for the comparsion.
 
