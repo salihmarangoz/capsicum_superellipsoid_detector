@@ -286,7 +286,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, Cos
   problem.SetParameterLowerBound(parameters, 4, 0.3); problem.SetParameterUpperBound(parameters, 4, 0.9); // e2
 
   Solver::Options options;
-  options.max_num_iterations = max_num_iterations; // todo
+  options.max_num_iterations = max_num_iterations;
   options.num_threads = 8; // can be good with SMT on modern CPU's
   options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
   options.minimizer_progress_to_stdout = log_to_stdout;
@@ -378,7 +378,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceParame
 
   for (double uu=-M_PI; uu<M_PI; uu+=u_res)
   {
-    for (double vv=-M_PI/2; vv<M_PI/2; vv+=v_res) // todo
+    for (double vv=-M_PI/2; vv<M_PI/2; vv+=v_res)
     {
       double r = 2./e2;
       double t = 2./e1;
@@ -628,23 +628,23 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
     case CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE:
       // 2) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
       //    Fits well enough even though this is not a super good approximation inside of the shape
-      residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.)); // remove abs?
+      residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.));
       break;
     case CostFunctionType::SOLINA:
       // 3) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
       //    Fits well enough.
-      residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.); // remove abs?
+      residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.);
       break;
     case CostFunctionType::SOLINA_DISTANCE:
       // 4) FAILED. SOLINA without sqrt(abc)
       //    Doesn't work well.
-      residual[0] = abs(pow(f1,e1/2.) - 1.); // remove abs?
+      residual[0] = abs(pow(f1,e1/2.) - 1.);
       break;
   }
 
   /////////////////////////// Priors /////////////////////////////////////
-  residual[1] =  prior_center * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
-  residual[2] = prior_scaling * sqrt(0.001 + pow(a-b, 2) + pow(b-c,2) + pow(c-a,2));
+  residual[1] = prior_center * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
+  residual[2] = prior_scaling * sqrt(0.001 + pow(a - b, 2) + pow(b - c,2) + pow(c - a,2));
 
   return true;
 }
