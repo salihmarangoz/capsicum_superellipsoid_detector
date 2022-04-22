@@ -106,11 +106,17 @@ Dependencies needed **only** for compiling and running the node (excluding launc
   $ sudo make install # run "sudo make uninstall" for uninstalling if needed
   ```
 
-### Compile
+- Others: Octomap, PCL, etc. Defined in `package.xml`.
 
 ```bash
 $ cd catkin_ws/
 $ rosdep install --from-paths src --ignore-src -r # install missing dependencis
+```
+
+### Compile
+
+```bash
+$ cd catkin_ws/
 $ catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
