@@ -75,6 +75,8 @@ $ wstool init . ./voxblox/voxblox_ssh.rosinstall
 
 Dependencies needed **only** for compiling and running the node (excluding launch files).
 
+- Ubuntu 20.04 + ROS Noetic
+
 - **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**
 - **[octomap_vpp](https://github.com/Eruvae/octomap_vpp)**
   - Only used for publishing **`~superellipsoids_volume_octomap`**. 
