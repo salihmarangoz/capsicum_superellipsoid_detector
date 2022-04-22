@@ -18,7 +18,7 @@
    * [Services](#services)
 * [Future Work](#future-work)
 
-Author: Salih Marangoz - s6samara@uni-bonn.de
+Author: Salih Marangoz - salih285@gmail.com
 
 Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project of [HRL](https://www.hrl.uni-bonn.de/).
 
