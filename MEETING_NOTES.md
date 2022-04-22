@@ -41,7 +41,7 @@ To-Do list before closing the project:
 
 - [x] add some images to the README
 
-- [ ] missing parts of the fruit:
+- [x] missing parts of the fruit:
   - I have added `superellipsoid_fibonacci_projection_sampling.ipynb` and found that projection fibonacci sphere onto a superellipsoid is **a pretty good solution** (image can be found above). I will combine this idea with `find_missing_part_of_spherical_data.ipynb` for extracting missing parts of the scanned fruits.
 
 - [x] add an example bag file (with a single pointcloud)
@@ -60,8 +60,6 @@ To-Do list before closing the project:
     ```
 
 - [x] clean git history from pdf and ipynb files. publishing the project in a public repository with research PDF's and old ipynb files with embedded videos in history is a not a good idea. (see: bfg-repo-cleaner)
-
-- [ ] compile the project in a VM with fresh Ubuntu for missing dependencies, etc.
 
 ### 22-Mar-2022
 

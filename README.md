@@ -29,6 +29,7 @@ Autonomous crop monitoring is a difficult task due to the complex structure of p
 - Euclidean Clustering to the input point cloud for fruit separation,
 - Computes surface normals then estimates fruit centers with the least-squares intersection of lines approach,
 - Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints).
+- Predicts missing surfaces on a fruit. This step is done by uniform-like sampling of the superellipsoid surface and then only selecting sampled points having the closest distance to data points higher than the threshold.
 
 [Youtube video link](https://www.youtube.com/watch?v=kX0oy-pKSh4) for the demo of this project: 
 
@@ -167,6 +168,14 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
   - Beta value for the prior which enforces **a**, **b**, **c** values which defines scaling of superellipsoid to be close to each other. Higher values increases the regularization. 
 
+- **`p_missing_surfaces_num_samples`: 300**
+
+  - Number of points for sampling with projected fibonacci sphere method for missing surface points prediction.
+
+- **`p_missing_surfaces_threshold`: 0.015**
+
+  - Points sampled with projected fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold sampled point is marked as a missing surface point.
+
 - **`p_min_cluster_size`: 100**
   
   - Discards clusters smaller than **p_min_cluster_size**.
@@ -224,7 +233,6 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
   - Optimized superellipsoids output. Headers are the same for all superellipsoids.
-
 - **`~clusters`** ("sensor_msgs/PointCloud2")
   - RGBXYZ pointcloud with each cluster has a different RGB color. Colors may be changed between messages for the same clusters. Recommended only for debugging.
 - **`~superellipsoids_surface`** ("sensor_msgs/PointCloud2")
@@ -237,11 +245,12 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
   - XYZ pointcloud for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. 
 - **`~superellipsoids_volume_octomap`** ("octomap_msgs::Octomap")
   - XYZ octomap_vpp::CountingOcTree for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. The count value represents cluster index of the superellipsoid.
-
 - **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
   - Arrow markers for visualizing surface normals. Surface normals are computed w.r.t. predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
 - **`~xyz_label_normal`** ("sensor_msgs/PointCloud2")
-  - XYZLNormal pointcloud for all all clustered points. Labels are indicating cluster indexes and normals are computed w.r.t. predicted cluster center. 
+  - XYZLNormal pointcloud for all clustered points. Labels are indicating cluster indexes and normals are computed w.r.t. predicted cluster center. 
+- **`~missing_surfaces`** ("sensor_msgs/PointCloud2")
+  - XYZLNormal pointcloud representing (estimated) missing data points on an superellipsoid. Labels are indicating cluster indexes and normals are directed towards the optimized center. 
 
 ### Transforms
 

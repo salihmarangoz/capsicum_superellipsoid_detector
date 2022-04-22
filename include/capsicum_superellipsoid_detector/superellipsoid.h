@@ -50,6 +50,7 @@ public:
   typename pcl::PointCloud<PointT>::Ptr getCloud();
   pcl::PointCloud<pcl::Normal>::Ptr getNormals();
   bool fit(bool log_to_stdout, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr estimateMissingSurfaces(double distance_threshold=0.01, int num_samples=1000);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // If you are creating the object with Superellipsoid ROS message then don't use the methods defined above unless specifying "cloud_in"
@@ -61,7 +62,7 @@ public:
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples=1000) const;
   pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceParametricDefinition(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, double u_res=0.05, double v_res=0.05) const;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool use_fibonacci_projection=false, bool apply_transformation=true) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool use_fibonacci_projection=false, bool apply_transformation=true, int num_samples_fibonacci=1000, double u_res_parametric=0.05, double v_res_parametric=0.05) const;
   pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true) const;
   pcl::PointXYZ getOptimizedCenter() const;
   double computeVolume() const;
@@ -304,6 +305,40 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, Cos
   return summary.IsSolutionUsable(); // true if converged
 }
 
+
+template <typename PointT>
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::estimateMissingSurfaces(double distance_threshold, int num_samples)
+{
+  pcl::PointCloud<pcl::PointXYZ>::Ptr fibonacci_superellipsoid = sampleSurface(true, true, num_samples);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr missing_surfaces = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared();
+
+  // TODO: For stability cloud_in can be projected onto the superellipsoid. No need to do this now...
+  pcl::search::KdTree<PointT> kdtree;
+  kdtree.setInputCloud(cloud_in);
+
+  for (size_t i = 0; i < fibonacci_superellipsoid->points.size(); i++)
+  {
+    auto p = fibonacci_superellipsoid->points.at(i);
+    PointT searchPoint;
+    searchPoint.x = p.x;
+    searchPoint.y = p.y;
+    searchPoint.z = p.z;
+
+    int K = 1;
+    std::vector<int> pointIdxKNNSearch(K);
+    std::vector<float> pointKNNSquaredDistance(K);
+    kdtree.nearestKSearch(searchPoint, K, pointIdxKNNSearch, pointKNNSquaredDistance);
+
+    if ( pointKNNSquaredDistance.at(0) > pow(distance_threshold, 2) )
+    {
+      missing_surfaces->points.push_back(p);
+    }
+  }
+
+  return missing_surfaces;
+}
+
+
 template <typename PointT>
 pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples) const
 {
@@ -394,7 +429,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceParame
 
 // https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
-pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool use_fibonacci_projection/*=false*/, bool apply_transformation/*=true*/) const
+pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool use_fibonacci_projection/*=false*/, bool apply_transformation/*=true*/, int num_samples_fibonacci/*=1000*/, double u_res_parametric/*=0.05*/, double v_res_parametric/*0.05*/) const
 {
   double a_ = (*parameters_ptr)[0];
   double b_ = (*parameters_ptr)[1];
@@ -420,11 +455,11 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool u
 
   if (use_fibonacci_projection)
   {
-    return _sampleSurfaceFibonacciProjection(a_, b_, c_, e1_, e2_, tx_, ty_, tz_, roll_, pitch_, yaw_, 1000); // num_samples=1000
+    return _sampleSurfaceFibonacciProjection(a_, b_, c_, e1_, e2_, tx_, ty_, tz_, roll_, pitch_, yaw_, num_samples_fibonacci);
   }
   else
   {
-    return _sampleSurfaceParametricDefinition(a_, b_, c_, e1_, e2_, tx_, ty_, tz_, roll_, pitch_, yaw_, 0.05, 0.05); // u_res=v_res=0.05
+    return _sampleSurfaceParametricDefinition(a_, b_, c_, e1_, e2_, tx_, ty_, tz_, roll_, pitch_, yaw_, u_res_parametric, v_res_parametric);
   }
 }
 

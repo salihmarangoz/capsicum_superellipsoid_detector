@@ -28,8 +28,8 @@
 #include <pcl/point_cloud.h>
 
 // ros params
-int p_min_cluster_size, p_max_cluster_size, p_max_num_iterations, p_cost_type;
-double p_cluster_tolerance, p_estimate_normals_search_radius, p_estimate_cluster_center_regularization, p_pointcloud_volume_resolution, p_octree_volume_resolution, p_prior_scaling, p_prior_center;
+int p_min_cluster_size, p_max_cluster_size, p_max_num_iterations, p_cost_type, p_missing_surfaces_num_samples;
+double p_cluster_tolerance, p_estimate_normals_search_radius, p_estimate_cluster_center_regularization, p_pointcloud_volume_resolution, p_octree_volume_resolution, p_prior_scaling, p_prior_center, p_missing_surfaces_threshold;
 bool p_print_ceres_summary, p_use_fibonacci_sphere_projection_sampling;
 std::string p_world_frame;
 
@@ -42,7 +42,8 @@ ros::Publisher superellipsoids_pub,
     superellipsoids_volume_pub,
     superellipsoids_volume_octomap_pub,
     surface_normals_marker_pub,
-    xyzlnormal_pub;
+    xyzlnormal_pub,
+    missing_surfaces_pub;
 
 std::unique_ptr<tf::TransformListener> listener;
 
@@ -121,6 +122,18 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   }
 
   auto t_end_optimization = std::chrono::high_resolution_clock::now();
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////// POST-PROCESSING ////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  auto t_start_postprocessing = std::chrono::high_resolution_clock::now();
+
+  std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> missing_surfaces;
+  for (const auto &se : converged_superellipsoids)
+  {
+    missing_surfaces.push_back( se->estimateMissingSurfaces(p_missing_surfaces_threshold, p_missing_surfaces_num_samples) );
+  }
+
+  auto t_end_postprocessing = std::chrono::high_resolution_clock::now();
   /////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////// OUTPUT /////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////
@@ -322,6 +335,46 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
     xyzlnormal_pub.publish(debug_pc_ros);
   }
 
+  // debug: visualize missing surfaces
+  if (missing_surfaces_pub.getNumSubscribers() > 0)
+  {
+    pcl::PointCloud<pcl::PointXYZLNormal>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZLNormal>);
+
+    int id_counter = 0;
+    for (int j = 0; j < converged_superellipsoids.size(); j++)
+    {
+      auto ms = missing_surfaces[j];
+      auto oc = converged_superellipsoids[j]->getOptimizedCenter();
+      debug_pc->points.reserve(debug_pc->points.size() + ms->points.size());
+
+      for (int i = 0; i < ms->points.size(); i++)
+      {
+        pcl::PointXYZLNormal p;
+        p.x = ms->points[i].x;
+        p.y = ms->points[i].y;
+        p.z = ms->points[i].z;
+        p.label = id_counter;
+        p.normal_x = oc.x - p.x;
+        p.normal_y = oc.y - p.y;
+        p.normal_z = oc.z - p.z;
+
+        // normalize normal vector
+        double normal_vec_len = sqrt(pow(p.normal_x,2) + pow(p.normal_y,2) + pow(p.normal_z,2));
+        p.normal_x = p.normal_x / normal_vec_len;
+        p.normal_y = p.normal_y / normal_vec_len;
+        p.normal_z = p.normal_z / normal_vec_len;
+
+        debug_pc->points.push_back(p);
+      }
+      id_counter++;
+    }
+
+    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*debug_pc, *debug_pc_ros);
+    debug_pc_ros->header = pc_pcl_tf_ros_header;
+    missing_surfaces_pub.publish(debug_pc_ros);
+  }
+
   auto t_end_output = std::chrono::high_resolution_clock::now();
   /////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////// LOGGING ////////////////////////////////////////////////////////////////
@@ -330,13 +383,15 @@ void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros)
   double elapsed_preprocessing = std::chrono::duration<double, std::milli>(t_end_preprocessing - t_start_preprocessing).count();
   double elapsed_clustering = std::chrono::duration<double, std::milli>(t_end_clustering - t_start_clustering).count();
   double elapsed_optimization = std::chrono::duration<double, std::milli>(t_end_optimization - t_start_optimization).count();
+  double elapsed_postprocessing = std::chrono::duration<double, std::milli>(t_end_postprocessing - t_start_postprocessing).count();
   double elapsed_output = std::chrono::duration<double, std::milli>(t_end_output - t_start_output).count();
-  double elapsed_total = elapsed_preprocessing + elapsed_clustering + elapsed_optimization + elapsed_output;
+  double elapsed_total = elapsed_preprocessing + elapsed_clustering + elapsed_optimization + elapsed_postprocessing + elapsed_output;
 
   ROS_INFO("Total Elapsed Time: %f ms", elapsed_total);
   ROS_INFO("(*) Preprocessing Time: %f ms", elapsed_preprocessing);
   ROS_INFO("(*) Clustering Time: %f ms", elapsed_clustering);
   ROS_INFO("(*) Optimization Time: %f ms", elapsed_optimization);
+  ROS_INFO("(*) Postprocessing Time: %f ms", elapsed_postprocessing);
   ROS_INFO("(*) ROS Output Computation/Publish Time: %f ms", elapsed_output);
   ROS_WARN("====== Callback finished! =======");
 }
@@ -352,6 +407,8 @@ int main(int argc, char **argv)
   priv_nh.param("p_min_cluster_size", p_min_cluster_size, 100);
   priv_nh.param("p_max_cluster_size", p_max_cluster_size, 10000);
   priv_nh.param("p_max_num_iterations", p_max_num_iterations, 100);
+  priv_nh.param("p_missing_surfaces_num_samples", p_missing_surfaces_num_samples, 300);
+  priv_nh.param("p_missing_surfaces_threshold", p_missing_surfaces_threshold, 0.015);
   priv_nh.param("p_cluster_tolerance", p_cluster_tolerance, 0.01);
   priv_nh.param("p_estimate_normals_search_radius", p_estimate_normals_search_radius, 0.015);
   priv_nh.param("p_estimate_cluster_center_regularization", p_estimate_cluster_center_regularization, 2.5);
@@ -374,6 +431,7 @@ int main(int argc, char **argv)
   superellipsoids_volume_octomap_pub = priv_nh.advertise<octomap_msgs::Octomap>("superellipsoids_volume_octomap", 2, true);
   surface_normals_marker_pub = priv_nh.advertise<visualization_msgs::MarkerArray>("surface_normals_marker", 2, true);
   xyzlnormal_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("xyz_label_normal", 2, true);
+  missing_surfaces_pub = priv_nh.advertise<sensor_msgs::PointCloud2>("missing_surfaces", 2, true);
 
   ros::Subscriber pc_sub = nh.subscribe("pc_in", 1, pcCallback);
 

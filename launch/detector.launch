@@ -7,6 +7,8 @@
     <param name="p_cost_type" value="2"/>
     <param name="p_prior_center" value="0.1"/>
     <param name="p_prior_scaling" value="0.1"/>
+    <param name="p_missing_surfaces_num_samples" value="300"/>
+    <param name="p_missing_surfaces_threshold" value="0.015"/>
     <param name="p_min_cluster_size" value="100"/>
     <param name="p_max_cluster_size" value="10000"/>
     <param name="p_max_num_iterations" value="100"/>
