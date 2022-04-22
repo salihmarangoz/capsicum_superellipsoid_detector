@@ -138,6 +138,8 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`p_cost_type`** **: 2**
 
+  Optimization cost function for matching superellipsoids to the input points. 
+
   Note: `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` works pretty well. Others have several problems.
 
   ![f](imgs/formulas/f_.png)
