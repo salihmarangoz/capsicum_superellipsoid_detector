@@ -28,7 +28,7 @@ Autonomous crop monitoring is a difficult task due to the complex structure of p
 
 - Euclidean Clustering to the input point cloud for fruit separation,
 - Computes surface normals then estimates fruit centers with the least-squares intersection of lines approach,
-- Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints).
+- Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints),
 - Predicts missing surfaces on a fruit. This step is done by uniform-like sampling of the superellipsoid surface and then only selecting sampled points having the closest distance to data points higher than the threshold.
 
 [Youtube video link](https://www.youtube.com/watch?v=kX0oy-pKSh4) for the demo of this project: 
@@ -182,7 +182,7 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`p_missing_surfaces_threshold`: 0.015**
 
-  - Points sampled with projected fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold sampled point is marked as a missing surface point.
+  - In meters. Points sampled with projected fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold sampled point is marked as a missing surface point.
 
 - **`p_min_cluster_size`: 100**
   
