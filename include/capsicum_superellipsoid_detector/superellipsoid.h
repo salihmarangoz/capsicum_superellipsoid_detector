@@ -309,7 +309,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceFibona
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr output_pc = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared ();
   double phi = M_PI * (3.0 - sqrt(5.0));  // golden angle in radians
-  int max_iter = std::ceil( -std::log10(std::min(e1, e2) )+1); // 3 iterations for very low e1/e2 and less iterations for others are enough
 
   for (int i=0; i<num_samples; i++)
   {
@@ -321,20 +320,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceFibona
     double z = sin(theta) * radius;
 
     // Project the sampled point onto superellipsoid
-    for (int j=0; j<max_iter; j++)
+    for (int j=0; j<10; j++) // 10 iterations are enough
     {
       // Compute distance to superellipsoid surface (approximation) and distance to center
       double f = pow(pow(abs(x),2.0/e2) + pow(abs(y),2.0/e2), e2/e1) + pow(abs(z),2.0/e1); // assuming a=1, b=1, c=1
       double distance_to_center = sqrt(pow(x,2) + pow(y,2) + pow(z,2));
-      double distance_to_superellipsoid;
-      if (f > 1.0)
-      { // if outside
-        distance_to_superellipsoid = abs(1.0-pow(f, e1/2.0));
-      }
-      else
-      { // if inside
-        distance_to_superellipsoid = -1.0 * distance_to_center * abs(1.0-pow(f, -e1/2.0));
-      }
+      double distance_to_superellipsoid = abs(1.0-pow(f, e1/2.0)) * SIGNUM(f-1); // negative if inside, positive if outside
 
       // Project using normalizer
       double normalizer = (distance_to_center - distance_to_superellipsoid) / distance_to_center;
