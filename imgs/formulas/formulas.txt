@@ -11,33 +11,33 @@ f(x,y,z) = \left[ \left |\frac{x}{a} \right|^{\frac{2}{e_2}} + \left |\frac{y}{b
 
 naive:
 
-\min_i \sum^n_{i=0} \left ( f(x_i, y_i, z_i) - 1 \right )^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} \left ( f(x_i, y_i, z_i) - 1 \right )^2
 
 lenhert:
 
-\min_i \sum^n_{i=0} \left ( \sqrt{abc} \left (  f(x_i, y_i, z_i)^{e_1} - 1 \right ) \right)^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} \left ( \sqrt{abc} \left (  f(x_i, y_i, z_i)^{e_1} - 1 \right ) \right)^2
 
 radial euclidean:
 
-\min_i \sum^n_{i=0} \left ( \sqrt{x^2+y^2+z^2} \left (  f(x_i, y_i, z_i)^{-\frac{e1}{2}} - 1 \right ) \right)^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} \left ( \sqrt{x^2+y^2+z^2} \left (  f(x_i, y_i, z_i)^{-\frac{e1}{2}} - 1 \right ) \right)^2
 
 solina:
 
-\min_i \sum^n_{i=0} \left ( \sqrt{abc} \left (  f(x_i, y_i, z_i)^{\frac{e1}{2}} - 1 \right ) \right)^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} \left ( \sqrt{abc} \left (  f(x_i, y_i, z_i)^{\frac{e1}{2}} - 1 \right ) \right)^2
 
 
 solina distance:
 
-\min_i \sum^n_{i=0} \left ( \left (  f(x_i, y_i, z_i)^{\frac{e1}{2}} - 1 \right ) \right)^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} \left ( \left (  f(x_i, y_i, z_i)^{\frac{e1}{2}} - 1 \right ) \right)^2
 
 
 ----------------------------------------------------------
 
 prior center:
 
-\min_i \sum^n_{i=0} (...)^2 + n \left ( \alpha \sqrt{ (t_x-p_x)^2 + (t_y-p_y)^2 + (t_z-p_z)^2 + \epsilon} \right )^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} (...)^2 + n \left ( \alpha \sqrt{ (t_x-p_x)^2 + (t_y-p_y)^2 + (t_z-p_z)^2 + \epsilon} \right )^2
 
 
 prior scaling:
 
-\min_i \sum^n_{i=0} (...)^2 + n \left ( \beta \sqrt{ (a-b)^2 + (b-c)^2 + (c-a)^2 + \epsilon} \right )^2
+\min_{a,b,c,e_1,e_2} \sum^n_{i=0} (...)^2 + n \left ( \beta \sqrt{ (a-b)^2 + (b-c)^2 + (c-a)^2 + \epsilon} \right )^2
