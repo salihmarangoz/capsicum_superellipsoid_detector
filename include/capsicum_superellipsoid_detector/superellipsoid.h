@@ -561,6 +561,11 @@ pcl::PointXYZ Superellipsoid<PointT>::getEstimatedCenter()
   return estimated_center;
 }
 
+// void::setEstimatedCenter()
+// {
+//   return estimated_center;
+// }
+
 
 template <typename PointT>
 typename pcl::PointCloud<PointT>::Ptr Superellipsoid<PointT>::getCloud()

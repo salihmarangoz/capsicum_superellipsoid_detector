@@ -12,7 +12,7 @@ SuperellipsoidFitter::SuperellipsoidFitter(): nhp_("~")
     nhp_.param("p_min_cluster_size", p_min_cluster_size, 100);
     nhp_.param("p_max_cluster_size", p_max_cluster_size, 10000);
     nhp_.param("p_max_num_iterations", p_max_num_iterations, 100);
-    nhp_.param("p_missing_surfaces_num_samples", p_missing_surfaces_num_samples, 300);
+    nhp_.param("p_missing_surfaces_num_samples", p_missing_surfaces_num_samples, 500);
     nhp_.param("p_missing_surfaces_threshold", p_missing_surfaces_threshold, 0.015);
     nhp_.param("p_cluster_tolerance", p_cluster_tolerance, 0.01);
     nhp_.param("p_estimate_normals_search_radius", p_estimate_normals_search_radius, 0.015);
@@ -52,7 +52,7 @@ pcl::PointCloud<pcl::PointXYZ>::ConstPtr SuperellipsoidFitter::removeActualPoint
     }
     std::sort( indices_to_remove.begin(), indices_to_remove.end() );
     indices_to_remove.erase( std::unique( indices_to_remove.begin(), indices_to_remove.end() ), indices_to_remove.end() );
-    ROS_WARN_STREAM("No of indices: "<<indices_to_remove.size());
+    ROS_INFO_STREAM("No of indices: "<<indices_to_remove.size());
     pcl::IndicesConstPtr indices_ptr(new pcl::Indices(indices_to_remove));
     const auto [inlier_cloud, outlier_cloud] = separateCloudByIndices<pcl::PointXYZ>(pc_surf_pred, indices_ptr); 
     return outlier_cloud;
@@ -65,39 +65,61 @@ pcl::PointCloud<pcl::PointXYZ>::ConstPtr SuperellipsoidFitter::removeActualPoint
 
 bool SuperellipsoidFitter::processSuperellipsoidFitterCallback(shape_completion_bridge_msgs::FitSuperellipsoids::Request& req, shape_completion_bridge_msgs::FitSuperellipsoids::Response& res)
 {
+  ROS_INFO("processSuperellipsoidFitterCallback");
+  int i = 0; 
   std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> superellipsoids;
+  ROS_ERROR_STREAM("No of clusters: "<<req.clustered_shapes.size());
   for (const auto& current_cluster_shape : req.clustered_shapes)
   {
+    i++; 
+    ROS_INFO_STREAM("***********Cluster "<<i<<" processing started***********************");
     shape_completion_bridge_msgs::SuperellipsoidResult se_res;
-    
+    ROS_DEBUG("Before cluster assignment");
     auto current_cluster_pc_ros = current_cluster_shape.cluster_pointcloud;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl;
+    ROS_DEBUG("After cluster assignment");
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl(new pcl::PointCloud<pcl::PointXYZRGB>);
+    ROS_DEBUG("Before fromROSMsg");
+
     pcl::fromROSMsg(current_cluster_pc_ros, *pc_pcl);
     auto new_superellipsoid = std::make_shared<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>(pc_pcl);
+    ROS_DEBUG("Before estimateNormals");
     new_superellipsoid->estimateNormals(p_estimate_normals_search_radius); // search_radius
+    ROS_DEBUG("Before estimateClusterCenter");
     new_superellipsoid->estimateClusterCenter(p_estimate_cluster_center_regularization); // regularization
+    ROS_DEBUG("Before flipNormalsTowardsClusterCenter");
     new_superellipsoid->flipNormalsTowardsClusterCenter();
     superellipsoids.push_back(new_superellipsoid);
 
-    if ( new_superellipsoid->fit(p_print_ceres_summary, p_max_num_iterations, (superellipsoid::CostFunctionType)(p_cost_type)) )
+    ROS_DEBUG("\t***********Before fit***********************");
+    bool success = new_superellipsoid->fit(p_print_ceres_summary, p_max_num_iterations, (superellipsoid::CostFunctionType)(p_cost_type));
+    ROS_INFO_STREAM("\t***********Cluster Fitting Result "<<success<<"***********************");
+    if (success)
     { // if converged
       se_res.valid_completion = true;
+      ROS_DEBUG("\t\tBefore estimateMissingSurfaces");
       pcl::PointCloud<pcl::PointXYZ>::Ptr missing_surface = new_superellipsoid->estimateMissingSurfaces(p_missing_surfaces_threshold, p_missing_surfaces_num_samples);
+      ROS_DEBUG("\t\tBefore getOptimizedCenter");
       pcl::PointXYZ optimised_centre = new_superellipsoid->getOptimizedCenter();
+      ROS_DEBUG("\t\tBefore sampleSurface");
       pcl::PointCloud<pcl::PointXYZ>::Ptr surface_cloud = new_superellipsoid->sampleSurface(p_use_fibonacci_sphere_projection_sampling);
+      ROS_DEBUG("\t\tBefore sampleVolume");
       pcl::PointCloud<pcl::PointXYZ>::Ptr volume_cloud  = new_superellipsoid->sampleVolume(p_pointcloud_volume_resolution);
+      ROS_DEBUG("\t\tBefore getNormals");
       pcl::PointCloud<pcl::Normal>::Ptr normals    = new_superellipsoid->getNormals();
+      ROS_DEBUG("\t\tBefore fromPCL2ROSType");
       fromPCL2ROSType(se_res, missing_surface, optimised_centre, surface_cloud, volume_cloud, normals, current_cluster_pc_ros);
-
+      ROS_DEBUG("\tAfter fromPCL2ROSType");
+      res.superellipsoids.push_back(se_res);
+      ROS_DEBUG("\t\tAfter push_back");
     }
     else
     {
-      ROS_WARN("Optimization failed for a cluster!");
+      ROS_WARN_STREAM("Optimization failed for cluster "<<i<<" !");
       se_res.valid_completion = false;
     }
-    res.superellipsoids.push_back(se_res);
+    ROS_DEBUG_STREAM("***********Cluster "<<i<<" processing ends***********************");
   }
-
+  return true;
 }
 
 int main(int argc, char **argv)
