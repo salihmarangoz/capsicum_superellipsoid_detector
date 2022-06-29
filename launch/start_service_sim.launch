@@ -3,9 +3,9 @@
 
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find capsicum_superellipsoid_detector)/launch/rviz_sim.rviz"/>
 
-  <node pkg="capsicum_superellipsoid_detector" type="detector_service_node" name="capsicum_superellipsoid_detector_server" output="screen" respawn="true">
+  <!-- <node pkg="capsicum_superellipsoid_detector" type="fit_superellipsoids_service_node" name="capsicum_superellipsoid_fitter_server" output="screen" respawn="true">
     <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
-  </node>
+  </node> -->
 
   <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
     <param name="queue_size" value="300"/>
@@ -49,6 +49,13 @@
   </node>
 -->
 
+    <node pkg="pointcloud_roi" type="filter_red_clusters_node" name="detect_roi">
+    <remap from="~input" to="/camera/depth/points" />
+    <remap from="~map_frame" to="/roi_viewpoint_planner/map_frame" />´
+    <param name="radius_filter/radius_search" value="0.05"/>
+    <param name="radius_filter/min_neighbours" value="1"/>
+  </node>
+
   <node pkg="nodelet" type="nodelet" name="statistical_filter" output="screen" args="standalone pcl/StatisticalOutlierRemoval">
     <remap from="~input" to="/detect_roi/roi_cloud"/>
     <remap from="~output" to="/camera/depth_masked/points_filtered"/>
@@ -64,7 +71,7 @@
 
   <node pkg="voxblox_ros" type="tsdf_server" name="voxblox_node" output="screen" args="-alsologtostderr" clear_params="true">
     <!--<remap from="pointcloud" to="/camera/depth_registered/points_filtered"/>-->
-    <remap from="pointcloud" to="/camera/depth_masked/points_filtered"/>
+    <remap from="pointcloud" to="/camera/depth_masked/points_filtered_static"/>
     <param name="tsdf_voxel_size" value="0.004" />
     <param name="tsdf_voxels_per_side" value="64" />
     <param name="voxel_carving_enabled" value="true" />
@@ -82,6 +89,14 @@
     <param name="accumulate_icp_corrections" value="false"/>
     <param name="publish_tsdf_info" value="true"/>
     <!-- <param name="start_voxel_subsampling_factor" value="8"/> -->
+  </node>
+
+
+  <node pkg="nodelet" type="nodelet" name="radius_filter" output="screen" args="standalone pcl/RadiusOutlierRemoval">
+    <remap from="~input" to="/voxblox_node/surface_pointcloud"/>
+    <remap from="~output" to="/voxblox_node/surface_pointcloud_filtered"/>
+    <param name="radius_search" value="0.03"/>
+    <param name="min_neighbours" value="10"/>
   </node>
 
 </launch>
