@@ -47,7 +47,7 @@ Some prototypes and experiments (implemented in Python) can be found below. Sele
 | [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
 | [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |
 | [find_missing_part_of_spherical_data.ipynb](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. (**Note:** Embedded videos may not be properly visualized on Github. I recommend [this](https://chrome.google.com/webstore/detail/jupyter-notebook-viewer/ocabfdicbcamoonfhalkdojedklfcjmf) Chrome extension for opening the notebook.) |
-| [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points.      |
+| [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points. See [my blog post](https://salihmarangoz.github.io/blog/Superellipsoid_Sampling/) for more. |
 
 
 
