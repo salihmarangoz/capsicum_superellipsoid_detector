@@ -65,6 +65,8 @@
   <depend>octomap</depend>
   <depend>octomap_ros</depend>
   <depend>octomap_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
 
   <depend>octomap_vpp</depend>
   <depend>superellipsoid_msgs</depend>

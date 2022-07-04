@@ -42,7 +42,7 @@ Some prototypes and experiments (implemented in Python) can be found below. Sele
 | Related File                                                 | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [detector_prototype.py](scripts/detector_prototype.py)       | First prototype Python code with ROS1 support. New ideas are not implemented here. |
-| [simulate_depth_noise.py](scripts/simulate_depth_noise.py)   | A simple code for adding noises (gaussian noise, shadowing effect, salt and pepper, waves) to the pointcloud data obtained from Gazebo simulator. |
+| [simulate_depth_noise.py](scripts/simulate_depth_noise.py)   | A simple code for adding noises (gaussian noise, shadowing effect, salt and pepper, waves) to the pointcloud data obtained from Gazebo simulator. **Note:** Currently using [simulate_depth_noise.cpp](src/simulate_depth_noise.cpp) instead. |
 | [optimization.ipynb](notebooks/optimization.ipynb)           | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
 | [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
 | [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |

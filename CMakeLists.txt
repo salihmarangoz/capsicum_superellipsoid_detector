@@ -24,6 +24,8 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_msgs
   octomap_vpp
   superellipsoid_msgs
+  image_transport
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -31,6 +33,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(octomap REQUIRED)
 find_package(PCL REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(OpenCV REQUIRED)
 
 
 add_definitions(${PCL_DEFINITIONS})
@@ -162,6 +165,8 @@ target_link_libraries(${PROJECT_NAME}
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(detector_node src/detector_node.cpp)
+add_executable(simulate_depth_noise_node src/simulate_depth_noise.cpp)
+add_executable(simple_roi_detector_node src/simple_roi_detector.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -172,12 +177,25 @@ add_executable(detector_node src/detector_node.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(simulate_depth_noise_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(detector_node
   ${PROJECT_NAME}
   ${OCTOMAP_LIBRARIES}
 )
+
+target_link_libraries(simulate_depth_noise_node
+  ${PROJECT_NAME}
+  ${OpenCV_LIBS}
+)
+
+target_link_libraries(simple_roi_detector_node
+  ${PROJECT_NAME}
+  ${OpenCV_LIBS}
+)
+
+
 
 #############
 ## Install ##
