@@ -9,7 +9,7 @@
     <remap from="~input" to="/camera/depth/points_noisy" />
     <remap from="~roi_cloud" to="/detect_roi_noisy/roi_cloud" />
     <remap from="~nonroi_cloud" to="/detect_roi_noisy/nonroi_cloud" />
-    <remap from="~map_frame" to="/roi_viewpoint_planner/map_frame" />´
+    <param name="map_frame" value="world" />´
   </node>
 
   <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
