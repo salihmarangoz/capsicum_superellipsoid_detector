@@ -4,6 +4,7 @@
 
 **Table of Contents**
 
+* [Citation](#citation)
 * [Introduction](#introduction)
 * [Installation](#installation)
    * [Related Packages](#related-packages)
@@ -21,6 +22,21 @@
 Author: Salih Marangoz - salih285@gmail.com
 
 Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project of [HRL](https://www.hrl.uni-bonn.de/).
+
+## Citation
+
+If using capsicum_superellipsoid_detector for scientific publications, please cite the following paper, available [here](https://doi.org/10.48550/arXiv.2203.15489):
+
+```
+@article{marangoz2022fruit,
+  title={Fruit Mapping with Shape Completion for Autonomous Crop Monitoring},
+  author={Marangoz, Salih and Zaenker, Tobias and Menon, Rohit and Bennewitz, Maren},
+  journal={arXiv preprint arXiv:2203.15489},
+  year={2022}
+}
+```
+
+
 
 ## Introduction
 
