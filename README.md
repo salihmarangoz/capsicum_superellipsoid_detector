@@ -19,13 +19,9 @@
    * [Services](#services)
 * [Future Work](#future-work)
 
-Author: Salih Marangoz - salih285@gmail.com
+## Paper
 
-Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project of [HRL](https://www.hrl.uni-bonn.de/).
-
-## Citation
-
-If using capsicum_superellipsoid_detector for scientific publications, please cite the following paper, available [here](https://doi.org/10.48550/arXiv.2203.15489):
+Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker), [Rohit Menon](https://www.hrl.uni-bonn.de/Members/menon/rohit-menon), and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project of [HRL](https://www.hrl.uni-bonn.de/). If using `capsicum_superellipsoid_detector` for scientific publications, please cite the following paper, available [here](https://doi.org/10.48550/arXiv.2203.15489):
 
 ```
 @article{marangoz2022fruit,
