@@ -21,15 +21,10 @@
 
 ## Paper
 
-Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker), [Rohit Menon](https://www.hrl.uni-bonn.de/Members/menon/rohit-menon), and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project of [HRL](https://www.hrl.uni-bonn.de/). If using `capsicum_superellipsoid_detector` for scientific publications, please cite the following paper, available [here](https://doi.org/10.48550/arXiv.2203.15489):
+Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker), [Rohit Menon](https://www.hrl.uni-bonn.de/Members/menon/rohit-menon), and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the research opportunity. If using `capsicum_superellipsoid_detector` for scientific publications, please cite our paper, available [here (Arxiv)](https://doi.org/10.48550/arXiv.2203.15489) and [here (IEEE)](https://doi.org/10.1109/CASE49997.2022.9926466), using [this bibtex](CITATION.bib) or plain citation:
 
 ```
-@article{marangoz2022fruit,
-  title={Fruit Mapping with Shape Completion for Autonomous Crop Monitoring},
-  author={Marangoz, Salih and Zaenker, Tobias and Menon, Rohit and Bennewitz, Maren},
-  journal={arXiv preprint arXiv:2203.15489},
-  year={2022}
-}
+S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, "Fruit Mapping with Shape Completion for Autonomous Crop Monitoring," 2022 IEEE 18th International Conference on Automation Science and Engineering (CASE), 2022, pp. 471-476, doi: 10.1109/CASE49997.2022.9926466.
 ```
 
 
