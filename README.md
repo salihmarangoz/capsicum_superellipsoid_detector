@@ -109,27 +109,27 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`p_cost_type`** **: 2**
 
-  Optimization cost function for matching superellipsoids to the input points. `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` are recommended options.
+  The cost function for fitting superellipsoids to the input points. `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` are recommended options.
 
   ![f](imgs/formulas/f_.png)
 
-  - `CostFunctionType::NAIVE = 0`
+  - `CostFunctionType::NAIVE = 0`: Uses the superellipsoid parametric representation directly.
 
   ![naive](imgs/formulas/naive_.png)
 
-  - `CostFunctionType::LEHNERT = 1`
+  - `CostFunctionType::LEHNERT = 1`: Lehnert's implementation squares the parametric function value compared to Solina's method.
 
   ![lenhert](imgs/formulas/lenhert_.png)
 
-  - `CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE = 2`
+  - `CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE = 2`: Works better with non-equilateral superellipsoids and estimates inside the shape better.
 
   ![radial](imgs/formulas/radial_.png)
 
-  - `CostFunctionType::SOLINA = 3`
+  - `CostFunctionType::SOLINA = 3`: Solina's distance approximation method with volume constraint. Estimates better for equilateral superellipsoids.
 
   ![solina](imgs/formulas/solina_.png)
 
-  - `CostFunctionType::SOLINA_DISTANCE = 4`
+  - `CostFunctionType::SOLINA_DISTANCE = 4`: Solina's distance approximation method.
 
   ![solina_dist](imgs/formulas/solina_dist_.png)
 
@@ -137,68 +137,66 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
   ![prior_center](imgs/formulas/prior_center_.png)
 
-  - Alpha value for the prior which enforces optimized center **t** and center estimated via surface normals **p** to be close to each other. Higher values increases the regularization.
+  - The prior (alpha value in the formula) which enforcing optimized center **t** and center estimated via surface normals **p** to be close to each other. Higher values increases the regularization.
 
 - **`p_prior_scaling`: 0.1**
 
   ![prior_scaling](imgs/formulas/prior_scaling_.png)
 
-  - Beta value for the prior which enforces **a**, **b**, **c** values which defines scaling of superellipsoid to be close to each other. Higher values increases the regularization. 
+  - The prior (beta value in the formula) which is enforcing **a**, **b**, **c** values define the scaling of superellipsoid to be close to each other. Higher values increase the regularization. Different than the volume constraint.
 
 - **`p_missing_surfaces_num_samples`: 300**
 
-  - Number of points for sampling with projected fibonacci sphere method for missing surface points prediction.
+  - The number of points being used to find points belonging to missing surfaces with rejection sampling.
 
 - **`p_missing_surfaces_threshold`: 0.015**
 
-  - In meters. Points sampled with projected fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold sampled point is marked as a missing surface point.
+  - In meters. Points sampled with the projected Fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold, the point will be marked as a missing surface point.
 
 - **`p_min_cluster_size`: 100**
   
-  - Discards clusters smaller than **p_min_cluster_size**.
+  - Discards clusters smaller than this value.
   
 - **`p_max_cluster_size`: 10000**
 
-  - Discards clusters larger than **p_max_cluster_size**.
+  - Discards clusters larger than this value.
 
 - **`p_max_num_iterations`: 100**
 
-  - Maximum number of non-linear least-squares optimization.
+  - The maximum number of optimization iterations.
 
 - **`p_cluster_tolerance`: 0.01**
 
-  - In meters. sGroups two points having smaller distance than **p_cluster_tolerance** into the same cluster.
+  - In meters. Groups two points with smaller distance than this value into the same cluster.
 
 - **`p_estimate_normals_search_radius`: 0.015**
 
-  - In meters. Uses points closer than **p_estimate_normals_search_radius** for normal vector computation.
+  - In meters. Search radius for surface normal estimation.
 
 - **`p_estimate_cluster_center_regularization`: 2.5**
 
-  - Regularization for intersection of lines computation. Defines bias towards mean of cluster points. Higher values brings the result towards the bias point. Useful when there are not enough surfaces.
+  - Regularization for the intersection of lines estimation. Defines a bias towards the mean of cluster points. Higher values bring the result towards the bias point. Useful when there are not enough surfaces.
 
 - **`p_pointcloud_volume_resolution`: 0.001**
 
-  - In meters. Resolution of **~superellipsoids_volume** message.
+  - In meters. Resolution of the pointcloud in **~superellipsoids_volume** message.
 
 - **`p_octree_volume_resolution`: 0.001**
 
-  - In meters. Resolution of **~superellipsoids_volume_octomap** message.
+  - In meters. Resolution of the pointcloud in **~superellipsoids_volume_octomap** message.
 
 - **`p_print_ceres_summary`: false**
 
-  - Prints cost, gradients, extra information, etc. for each optimization step.
+  - Enables printing cost, gradients, extra information, etc. for each optimization step.
 
 - **`p_use_fibonacci_sphere_projection_sampling`: false**
 
-  - This only affects the the output of **~superellipsoids_surface** message. I personaly find surface sampled with parametric representation easier to perceive.
-  - If true, uses our approach for uniform-like sampling of superellipsoid .
-  - If false, uses parametric representation which is not uniform-like.
-  - See [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) for the comparsion.
+  - If true, uses our approach for sampling of superellipsoid surfaces which distributes points on the surface uniformly. If false, uses the superellipsoid parametric representation which enables easier perceiving the orientation of the superellipsoids. This only affects the the output of **~superellipsoids_surface** message.
 
 - **`p_world_frame`: "world"**
 
   - World transform frame.
+  - TODO: will be used for object tracking
 
 ### Subscribed Topics
 
@@ -207,6 +205,8 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 - RGBXYZ pointcloud as the input (e.g. voxblox output can be used as the input). Currently RGB information is not used. Some modifications may be needed to feed XYZ only pointcloud.
 
 ### Published Topics
+
+Note: Computation resources will only be used for subscribed topics.
 
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
   - Optimized superellipsoids output. Headers are the same for all superellipsoids.

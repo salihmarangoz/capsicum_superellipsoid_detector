@@ -3,23 +3,6 @@
 
   <node pkg="capsicum_superellipsoid_detector" type="detector_node" name="capsicum_superellipsoid_detector" output="screen" respawn="true">
     <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
-
-    <param name="p_cost_type" value="2"/>
-    <param name="p_prior_center" value="0.1"/>
-    <param name="p_prior_scaling" value="0.1"/>
-    <param name="p_missing_surfaces_num_samples" value="300"/>
-    <param name="p_missing_surfaces_threshold" value="0.015"/>
-    <param name="p_min_cluster_size" value="100"/>
-    <param name="p_max_cluster_size" value="10000"/>
-    <param name="p_max_num_iterations" value="100"/>
-    <param name="p_cluster_tolerance" value="0.01"/>
-    <param name="p_estimate_normals_search_radius" value="0.015"/>
-    <param name="p_estimate_cluster_center_regularization" value="2.5"/>
-    <param name="p_pointcloud_volume_resolution" value="0.001"/>
-    <param name="p_octree_volume_resolution" value="0.001"/>
-    <param name="p_print_ceres_summary" value="false"/>
-    <param name="p_use_fibonacci_sphere_projection_sampling" value="false"/>
-    <param name="p_world_frame" value="world"/>
   </node>
 
 </launch>
