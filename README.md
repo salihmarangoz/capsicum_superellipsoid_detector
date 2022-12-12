@@ -1,11 +1,14 @@
 # Capsicum Superellipsoid Detector (ROS1)
 
-Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views about all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating shapes of fruits by fitting superellipsoids. The ROS node; 
+Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views of all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating the shapes of fruits by fitting superellipsoids. This ROS package; 
 
-- Applies Euclidean Clustering to the input point cloud for fruit separation,
-- Computes surface normals then estimates fruit centers with the least-squares intersection of lines approach,
-- Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints),
-- Predicts missing surfaces on a fruit. This step is done by uniform-like sampling of the superellipsoid surface and then only selecting sampled points having the closest distance to data points higher than the threshold.
+1. Applies Euclidean Clustering to the input point cloud,
+
+2. Computes surface normals to estimate fruit centers with the least-squares intersection of lines approach,
+
+3. Fits superellipsoids to the clustered points with a non-linear least-squares approach.
+
+4. Predicts missing surfaces on a fruit, which may be useful for planning.
 
 ![demo](imgs/demo.gif)
 
@@ -28,8 +31,6 @@ S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape 
   doi={10.1109/CASE49997.2022.9926466}
 }
 ```
-
-
 
 ## Introduction
 
@@ -254,4 +255,4 @@ There are no services for the written node. But voxblox needs a `std_srvs/Empty`
 
 ## HiWi
 
-This project is completed under a HiWi job. Meeting notes can be found [here](hiwi).
+This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](https://www.hrl.uni-bonn.de/). Meeting notes can be found [here](hiwi).
