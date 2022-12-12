@@ -1,48 +1,37 @@
 # Capsicum Superellipsoid Detector (ROS1)
 
+Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views about all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating shapes of fruits by fitting superellipsoids. The ROS node; 
+
+- Applies Euclidean Clustering to the input point cloud for fruit separation,
+- Computes surface normals then estimates fruit centers with the least-squares intersection of lines approach,
+- Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints),
+- Predicts missing surfaces on a fruit. This step is done by uniform-like sampling of the superellipsoid surface and then only selecting sampled points having the closest distance to data points higher than the threshold.
+
 ![demo](imgs/demo.gif)
 
-**Table of Contents**
 
-* [Citation](#citation)
-* [Introduction](#introduction)
-* [Installation](#installation)
-   * [Related Packages](#related-packages)
-   * [Package Dependencies](#package-dependencies)
-   * [Compile](#compile)
-* [Running](#running)
-* [ROS Topics, Transforms, and Services](#ros-topics-transforms-and-services)
-   * [Parameters](#parameters)
-   * [Subscribed Topics](#subscribed-topics)
-   * [Published Topics](#published-topics)
-   * [Transforms](#transforms)
-   * [Services](#services)
-* [Future Work](#future-work)
+## Paper and Video
 
-## Paper
+Screen recording while running the project can be seen [here](https://www.youtube.com/watch?v=kX0oy-pKSh4).
 
-Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker), [Rohit Menon](https://www.hrl.uni-bonn.de/Members/menon/rohit-menon), and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the research opportunity. If using `capsicum_superellipsoid_detector` for scientific publications, please cite our paper, available [here (Arxiv)](https://doi.org/10.48550/arXiv.2203.15489) and [here (IEEE)](https://doi.org/10.1109/CASE49997.2022.9926466), using [this bibtex](CITATION.bib) or plain citation:
+If using `capsicum_superellipsoid_detector` for scientific publications, please cite our paper, available [here](https://doi.org/10.1109/CASE49997.2022.9926466) and [here](https://doi.org/10.48550/arXiv.2203.15489):
+
+S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape Completion for Autonomous Crop Monitoring,"** *2022 IEEE 18th International Conference on Automation Science and Engineering (CASE)*, 2022, pp. 471-476.
 
 ```
-S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, "Fruit Mapping with Shape Completion for Autonomous Crop Monitoring," 2022 IEEE 18th International Conference on Automation Science and Engineering (CASE), 2022, pp. 471-476, doi: 10.1109/CASE49997.2022.9926466.
+@INPROCEEDINGS{marangoz2022fruit,
+  author={Marangoz, Salih and Zaenker, Tobias and Menon, Rohit and Bennewitz, Maren},
+  booktitle={2022 IEEE 18th International Conference on Automation Science and Engineering (CASE)}, 
+  title={Fruit Mapping with Shape Completion for Autonomous Crop Monitoring}, 
+  year={2022},
+  pages={471-476},
+  doi={10.1109/CASE49997.2022.9926466}
+}
 ```
 
 
 
 ## Introduction
-
-Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views about all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating shapes of fruits by fitting superellipsoids. The ROS node applies; 
-
-- Euclidean Clustering to the input point cloud for fruit separation,
-- Computes surface normals then estimates fruit centers with the least-squares intersection of lines approach,
-- Matches superellipsoids to the clustered points with a non-linear least-squares approach. Also, some priors are used (estimated center, superellipsoid scaling constraints),
-- Predicts missing surfaces on a fruit. This step is done by uniform-like sampling of the superellipsoid surface and then only selecting sampled points having the closest distance to data points higher than the threshold.
-
-[Youtube video link](https://www.youtube.com/watch?v=kX0oy-pKSh4) for the demo of this project: 
-
-[![](https://img.youtube.com/vi/kX0oy-pKSh4/0.jpg)](https://www.youtube.com/watch?v=kX0oy-pKSh4)
-
-Meeting notes (for HiWi) can be found [here](MEETING_NOTES.md).
 
 Some prototypes and experiments (implemented in Python) can be found below. Selected ideas are already implemented in C++:
 
@@ -273,6 +262,8 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ### Services
 
+TODO
+
 There are no services for the written node. But voxblox needs a `std_srvs/Empty` for publishing pointclouds of mapped plants which will be also triggering the computation of the superellipsoid detector node. Currently this task is assigned to `scripts/trigger_voxblox.py` which calls the related service in a fixed interval.
 
 
@@ -285,3 +276,9 @@ There are no services for the written node. But voxblox needs a `std_srvs/Empty`
 - Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
 - Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.
 - Loss functions can be used against outliers: http://ceres-solver.org/nnls_modeling.html#lossfunction
+
+
+
+## HiWi
+
+This project is completed under a HiWi job. Meeting notes can be found [here](hiwi).
