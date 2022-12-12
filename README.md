@@ -33,17 +33,8 @@ S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape 
 
 ## Introduction
 
-Some prototypes and experiments (implemented in Python) can be found below. Selected ideas are already implemented in C++:
+Some prototypes and experiments (implemented in Python) can be found in the [prototypes](prototypes) folder.
 
-| Related File                                                 | Description                                                  |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [detector_prototype.py](scripts/detector_prototype.py)       | First prototype Python code with ROS1 support. New ideas are not implemented here. |
-| [simulate_depth_noise.py](scripts/simulate_depth_noise.py)   | A simple code for adding noises (gaussian noise, shadowing effect, salt and pepper, waves) to the pointcloud data obtained from Gazebo simulator. **Note:** Currently using [simulate_depth_noise.cpp](src/simulate_depth_noise.cpp) instead. |
-| [optimization.ipynb](notebooks/optimization.ipynb)           | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
-| [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
-| [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |
-| [find_missing_part_of_spherical_data.ipynb](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. (**Note:** Embedded videos may not be properly visualized on Github. I recommend [this](https://chrome.google.com/webstore/detail/jupyter-notebook-viewer/ocabfdicbcamoonfhalkdojedklfcjmf) Chrome extension for opening the notebook.) |
-| [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points. See [my blog post](https://salihmarangoz.github.io/blog/Superellipsoid_Sampling/) for more. |
 
 
 
@@ -82,31 +73,15 @@ Dependencies needed **only** for compiling and running the node (excluding launc
 
 - **[Ceres Solver](http://ceres-solver.org/installation.html):** (I have developed the project using the version 2.x.x but both versions should be OK.)
 
-  - Apt Installation (version 1.x.x)
-
   ```bash
   $ sudo apt install libceres-dev
   ```
-
-  - Manual Installation (version 2.x.x)
-
-  ```bash
-  $ sudo apt-get install cmake libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev libsuitesparse-dev
-  $ cd ~/catkin_ws # or another path... don't delete the folder afterwards to be able to uninstall it
-  $ git clone https://github.com/ceres-solver/ceres-solver.git
-  $ cd ceres-solver
-  $ mkdir build
-  $ cd build
-  $ cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -DBUILD_BENCHMARKS=OFF -DBUILD_SHARED_LIBS=ON
-  $ make -j8
-  $ sudo make install # run "sudo make uninstall" for uninstalling if needed
-  ```
-
+  
 - Others: Octomap, PCL, etc. Defined in `package.xml`.
 
 ```bash
 $ cd catkin_ws/
-$ rosdep install --from-paths src --ignore-src -r # install missing dependencis
+$ rosdep install --from-paths src --ignore-src -r # install missing dependencies
 ```
 
 ### Compile
@@ -134,9 +109,7 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`p_cost_type`** **: 2**
 
-  Optimization cost function for matching superellipsoids to the input points. 
-
-  Note: `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` works pretty well. Others have several problems.
+  Optimization cost function for matching superellipsoids to the input points. `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` are recommended options.
 
   ![f](imgs/formulas/f_.png)
 
