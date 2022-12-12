@@ -5,11 +5,11 @@
 
   <include file="$(find capsicum_superellipsoid_detector)/launch/detector.launch"/>
 
-  <node pkg="pointcloud_roi" type="filter_red_clusters_node" name="detect_roi_noisy">
+  <node pkg="capsicum_superellipsoid_detector" type="simple_roi_detector_node" name="detect_roi_noisy">
     <remap from="~input" to="/camera/depth/points_noisy" />
     <remap from="~roi_cloud" to="/detect_roi_noisy/roi_cloud" />
     <remap from="~nonroi_cloud" to="/detect_roi_noisy/nonroi_cloud" />
-    <remap from="~map_frame" to="/roi_viewpoint_planner/map_frame" />´
+    <param name="map_frame" value="world" />´
   </node>
 
   <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
@@ -21,7 +21,7 @@
     <!-- <remap from="depth_registered/image_rect" to="/camera/depth/image_raw"/> -->
   </node>
 
-  <node pkg="capsicum_superellipsoid_detector" type="simulate_depth_noise.py" name="simulate_depth_noise" output="screen"></node>
+  <node pkg="capsicum_superellipsoid_detector" type="simulate_depth_noise_node" name="simulate_depth_noise" output="screen"></node>
 
   <node pkg="nodelet" type="nodelet" name="depth_proc_point_cloud_xyzrgb2" args="standalone depth_image_proc/point_cloud_xyzrgb" output="screen">
     <param name="queue_size" value="300"/>

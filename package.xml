@@ -65,10 +65,12 @@
   <depend>octomap</depend>
   <depend>octomap_ros</depend>
   <depend>octomap_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
 
   <depend>octomap_vpp</depend>
   <depend>superellipsoid_msgs</depend>
-  <depend>shape_completion_bridge_msgs</depend>
+  <!--<depend>shape_completion_bridge_msgs</depend>-->
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

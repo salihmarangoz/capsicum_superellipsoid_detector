@@ -1,7 +1,6 @@
 #pragma once
 #include<ros/ros.h>
 #include <shape_completion_bridge_msgs/FitSuperellipsoids.h>
-#include <shape_completion_bridge_msgs/FitSuperellipsoids.h>
 
 #include <superellipsoid_msgs/SuperellipsoidArray.h>
 

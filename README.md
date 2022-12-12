@@ -4,6 +4,7 @@
 
 **Table of Contents**
 
+* [Citation](#citation)
 * [Introduction](#introduction)
 * [Installation](#installation)
    * [Related Packages](#related-packages)
@@ -18,9 +19,15 @@
    * [Services](#services)
 * [Future Work](#future-work)
 
-Author: Salih Marangoz - salih285@gmail.com
+## Paper
 
-Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker) and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the opportunity and help with the project of [HRL](https://www.hrl.uni-bonn.de/).
+Many thanks to [Tobias Zaenker](https://www.hrl.uni-bonn.de/Members/tzaenker/tobias-zaenker), [Rohit Menon](https://www.hrl.uni-bonn.de/Members/menon/rohit-menon), and [Prof. Dr. Maren Bennewitz](https://www.hrl.uni-bonn.de/Members/maren) for the research opportunity. If using `capsicum_superellipsoid_detector` for scientific publications, please cite our paper, available [here (Arxiv)](https://doi.org/10.48550/arXiv.2203.15489) and [here (IEEE)](https://doi.org/10.1109/CASE49997.2022.9926466), using [this bibtex](CITATION.bib) or plain citation:
+
+```
+S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, "Fruit Mapping with Shape Completion for Autonomous Crop Monitoring," 2022 IEEE 18th International Conference on Automation Science and Engineering (CASE), 2022, pp. 471-476, doi: 10.1109/CASE49997.2022.9926466.
+```
+
+
 
 ## Introduction
 
@@ -42,12 +49,12 @@ Some prototypes and experiments (implemented in Python) can be found below. Sele
 | Related File                                                 | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [detector_prototype.py](scripts/detector_prototype.py)       | First prototype Python code with ROS1 support. New ideas are not implemented here. |
-| [simulate_depth_noise.py](scripts/simulate_depth_noise.py)   | A simple code for adding noises (gaussian noise, shadowing effect, salt and pepper, waves) to the pointcloud data obtained from Gazebo simulator. |
+| [simulate_depth_noise.py](scripts/simulate_depth_noise.py)   | A simple code for adding noises (gaussian noise, shadowing effect, salt and pepper, waves) to the pointcloud data obtained from Gazebo simulator. **Note:** Currently using [simulate_depth_noise.cpp](src/simulate_depth_noise.cpp) instead. |
 | [optimization.ipynb](notebooks/optimization.ipynb)           | Least-Squares optimization for fitting superellipsoid to partial pointcloud. |
 | [intersection_of_lines.ipynb](notebooks/intersection_of_lines.ipynb) | Least-Squares estimation of capsicum centroid using surface normals. |
 | [cost_functions.ipynb](notebooks/cost_functions.ipynb)       | Analyzing of different cost functions.                       |
 | [find_missing_part_of_spherical_data.ipynb](notebooks/find_missing_part_of_spherical_data.ipynb) | Experiments for finding missing parts of spherical data. Can be extended to superellipsoidical data. (**Note:** Embedded videos may not be properly visualized on Github. I recommend [this](https://chrome.google.com/webstore/detail/jupyter-notebook-viewer/ocabfdicbcamoonfhalkdojedklfcjmf) Chrome extension for opening the notebook.) |
-| [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points.      |
+| [superellipsoid_fibonacci_projection_sampling.ipynb](notebooks/superellipsoid_fibonacci_projection_sampling.ipynb) | Uniform-like sampling of superellipsoid surface points. See [my blog post](https://salihmarangoz.github.io/blog/Superellipsoid_Sampling/) for more. |
 
 
 
