@@ -1,0 +1,7 @@
+<library path="lib/libNodeletSampleNodelet">
+  <class name="capsicum_superellipsoid_detector/SuperellipsoidDetectorNodelet" type="capsicum_superellipsoid_detector::SuperellipsoidDetectorNodelet" base_class_type="nodelet::Nodelet">
+  <description>
+  capsicum_superellipsoid_detector nodelet.
+  </description>
+  </class>
+</library>

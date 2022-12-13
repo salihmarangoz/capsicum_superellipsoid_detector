@@ -3,30 +3,9 @@
   <name>capsicum_superellipsoid_detector</name>
   <version>0.0.0</version>
   <description>The capsicum_superellipsoid_detector package</description>
-
-  <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="salih285@gmail.com">Salih Marangoz</maintainer>
-
-
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <!-- Commonly used license strings: -->
-  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>BSD</license>
-
-
-  <!-- Url tags are optional, but multiple are allowed, one per tag -->
-  <!-- Optional attribute type can be: website, bugtracker, or repository -->
-  <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/capsicum_superellipsoid_detector</url> -->
-
-
-  <!-- Author tags are optional, multiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintainers, but could be -->
-  <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
-
+  <url type="website">https://github.com/salihmarangoz/capsicum_superellipsoid_detector</url>
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
@@ -67,13 +46,13 @@
   <depend>octomap_msgs</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
+  <depend>nodelet</depend>
 
   <depend>octomap_vpp</depend>
   <depend>superellipsoid_msgs</depend>
   <!--<depend>shape_completion_bridge_msgs</depend>-->
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    <!-- Other tools can request additional information be placed here -->
 
+  <export>
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 </package>

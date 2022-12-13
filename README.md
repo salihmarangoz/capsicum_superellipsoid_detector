@@ -1,6 +1,8 @@
 # Capsicum Superellipsoid Detector (ROS1)
 
-Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views of all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating the shapes of fruits by fitting superellipsoids. This ROS package; 
+Autonomous crop monitoring is a difficult task due to the complex structure of plants. Occlusions from leaves can make it impossible to obtain complete views of all fruits of plants (e.g. Capsicum). Therefore, accurately estimating the shape and volume of fruits from partial information is crucial to enable further advanced automation tasks such as yield estimation and automated fruit picking. In this work, we present an approach for faster and better estimating the shapes of fruits by fitting superellipsoids.
+
+This ROS package; 
 
 1. Applies Euclidean Clustering to the input point cloud,
 
@@ -10,6 +12,8 @@ Autonomous crop monitoring is a difficult task due to the complex structure of p
 
 4. Predicts missing surfaces on a fruit, which may be useful for planning.
 
+Also, some prototypes and experiments (implemented in Python) can be found in the [prototypes](prototypes) folder.
+
 ![demo](imgs/demo.gif)
 
 
@@ -17,7 +21,7 @@ Autonomous crop monitoring is a difficult task due to the complex structure of p
 
 Screen recording while running the project can be seen [here](https://www.youtube.com/watch?v=kX0oy-pKSh4).
 
-If using `capsicum_superellipsoid_detector` for scientific publications, please cite our paper, available [here](https://doi.org/10.1109/CASE49997.2022.9926466) and [here](https://doi.org/10.48550/arXiv.2203.15489):
+If using our project for scientific publications, please cite our paper available [here](https://doi.org/10.1109/CASE49997.2022.9926466) and [here](https://doi.org/10.48550/arXiv.2203.15489):
 
 S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape Completion for Autonomous Crop Monitoring,"** *2022 IEEE 18th International Conference on Automation Science and Engineering (CASE)*, 2022, pp. 471-476.
 
@@ -32,11 +36,7 @@ S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape 
 }
 ```
 
-## Introduction
-
-Some prototypes and experiments (implemented in Python) can be found in the [prototypes](prototypes) folder.
-
-
+TODO: TOC
 
 
 ## Installation
@@ -256,3 +256,14 @@ There are no services for the written node. But voxblox needs a `std_srvs/Empty`
 ## HiWi
 
 This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](https://www.hrl.uni-bonn.de/). Meeting notes can be found [here](hiwi).
+
+
+
+## TODO:
+
+- [ ] simplify readme
+- [ ] add object tracking
+- [ ] optional dependencies as much as possible
+- [ ] fix ros service, maybe add ros messages
+- [ ] update the comments in superellipsoid msgs
+- [ ] decrease the number of published topics if possible
