@@ -4,10 +4,10 @@
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "capsicum_superellipsoid_detector_node");
-  superellipsoid::SuperellipsoidDetector sd;
   ros::NodeHandle nh;
   ros::NodeHandle priv_nh("~");
-  sd.init(nh, priv_nh);
+  superellipsoid::SuperellipsoidDetector sd(nh, priv_nh);
+  sd.startNode();
   ros::spin();
   return 0;
 }

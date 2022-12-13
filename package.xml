@@ -47,6 +47,8 @@
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
   <depend>nodelet</depend>
+  <depend>dynamic_reconfigure</depend>
+
 
   <depend>octomap_vpp</depend>
   <depend>superellipsoid_msgs</depend>

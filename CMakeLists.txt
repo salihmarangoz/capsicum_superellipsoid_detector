@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 #  shape_completion_bridge_msgs
   image_transport
   cv_bridge
+  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -111,10 +112,9 @@ add_definitions(${PCL_DEFINITIONS})
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/SuperellipsoidDetector.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -149,6 +149,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/clustering.cpp
+  src/superellipsoid_detector.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -162,35 +163,18 @@ target_link_libraries(${PROJECT_NAME}
   ${CERES_LIBRARIES}
 )
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-add_executable(detector_node src/detector_node.cpp)
 
-# TODO
-#add_executable(fit_superellipsoids_service_node src/fit_superellipsoids_service_node.cpp)
+add_executable(superellipsoid_detector_node src/superellipsoid_detector_node.cpp)
+#add_executable(fit_superellipsoids_service_node src/fit_superellipsoids_service_node.cpp) # TODO
+#add_executable(simulate_depth_noise_node src/simulate_depth_noise.cpp)
+#add_executable(simple_roi_detector_node src/simple_roi_detector.cpp)
 
-add_executable(simulate_depth_noise_node src/simulate_depth_noise.cpp)
-
-add_executable(simple_roi_detector_node src/simple_roi_detector.cpp)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(detector_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-add_dependencies(detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-# TODO
-#add_dependencies(fit_superellipsoids_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_dependencies(simulate_depth_noise_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(superellipsoid_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(fit_superellipsoids_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}) # TODO
+#add_dependencies(simulate_depth_noise_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(detector_node
+target_link_libraries(superellipsoid_detector_node
   ${PROJECT_NAME}
   ${OCTOMAP_LIBRARIES}
 )
@@ -201,15 +185,15 @@ target_link_libraries(detector_node
 #  ${OCTOMAP_LIBRARIES}
 #)
 
-target_link_libraries(simulate_depth_noise_node
-  ${PROJECT_NAME}
-  ${OpenCV_LIBS}
-)
+#target_link_libraries(simulate_depth_noise_node
+#  ${PROJECT_NAME}
+#  ${OpenCV_LIBS}
+#)
 
-target_link_libraries(simple_roi_detector_node
-  ${PROJECT_NAME}
-  ${OpenCV_LIBS}
-)
+#target_link_libraries(simple_roi_detector_node
+#  ${PROJECT_NAME}
+#  ${OpenCV_LIBS}
+#)
 
 #############
 ## Install ##

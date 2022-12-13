@@ -267,3 +267,4 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 - [ ] fix ros service, maybe add ros messages
 - [ ] update the comments in superellipsoid msgs
 - [ ] decrease the number of published topics if possible
+- [ ] use tf2 instead of tf
