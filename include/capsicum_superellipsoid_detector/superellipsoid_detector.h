@@ -43,7 +43,8 @@ public:
     ~SuperellipsoidDetector();
     void startNode();
     void startService();
-    void pcCallback(const sensor_msgs::PointCloud2Ptr &pc_ros);
+    void processInput(const sensor_msgs::PointCloud2Ptr &pc2);
+    void pcCallback(const sensor_msgs::PointCloud2Ptr &pc2);
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
 
     ros::NodeHandle &m_nh;

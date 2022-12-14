@@ -108,7 +108,7 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ### Parameters
 
-- **`p_cost_type`** **: 2**
+- **`cost_type`** **: 2**
 
   The cost function for fitting superellipsoids to the input points. `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` are recommended options.
 
@@ -134,67 +134,67 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
   ![solina_dist](imgs/formulas/solina_dist_.png)
 
-- **`p_prior_center`: 0.1**
+- **`prior_center`: 0.1**
 
   ![prior_center](imgs/formulas/prior_center_.png)
 
   - The prior (alpha value in the formula) which enforcing optimized center **t** and center estimated via surface normals **p** to be close to each other. Higher values increases the regularization.
 
-- **`p_prior_scaling`: 0.1**
+- **`prior_scaling`: 0.1**
 
   ![prior_scaling](imgs/formulas/prior_scaling_.png)
 
   - The prior (beta value in the formula) which is enforcing **a**, **b**, **c** values define the scaling of superellipsoid to be close to each other. Higher values increase the regularization. Different than the volume constraint.
 
-- **`p_missing_surfaces_num_samples`: 300**
+- **`missing_surfaces_num_samples`: 500**
 
   - The number of points being used to find points belonging to missing surfaces with rejection sampling.
 
-- **`p_missing_surfaces_threshold`: 0.015**
+- **`missing_surfaces_threshold`: 0.015**
 
   - In meters. Points sampled with the projected Fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold, the point will be marked as a missing surface point.
 
-- **`p_min_cluster_size`: 100**
+- **`min_cluster_size`: 100**
   
   - Discards clusters smaller than this value.
   
-- **`p_max_cluster_size`: 10000**
+- **`max_cluster_size`: 10000**
 
   - Discards clusters larger than this value.
 
-- **`p_max_num_iterations`: 100**
+- **`max_num_iterations`: 100**
 
   - The maximum number of optimization iterations.
 
-- **`p_cluster_tolerance`: 0.01**
+- **`cluster_tolerance`: 0.01**
 
   - In meters. Groups two points with smaller distance than this value into the same cluster.
 
-- **`p_estimate_normals_search_radius`: 0.015**
+- **`estimate_normals_search_radius`: 0.015**
 
   - In meters. Search radius for surface normal estimation.
 
-- **`p_estimate_cluster_center_regularization`: 2.5**
+- **`estimate_cluster_center_regularization`: 2.5**
 
   - Regularization for the intersection of lines estimation. Defines a bias towards the mean of cluster points. Higher values bring the result towards the bias point. Useful when there are not enough surfaces.
 
-- **`p_pointcloud_volume_resolution`: 0.001**
+- **`pointcloud_volume_resolution`: 0.001**
 
   - In meters. Resolution of the pointcloud in **~superellipsoids_volume** message.
 
-- **`p_octree_volume_resolution`: 0.001**
+- **`octree_volume_resolution`: 0.001**
 
   - In meters. Resolution of the pointcloud in **~superellipsoids_volume_octomap** message.
 
-- **`p_print_ceres_summary`: false**
+- **`print_ceres_summary`: false**
 
   - Enables printing cost, gradients, extra information, etc. for each optimization step.
 
-- **`p_use_fibonacci_sphere_projection_sampling`: false**
+- **`use_fibonacci_sphere_projection_sampling`: false**
 
   - If true, uses our approach for sampling of superellipsoid surfaces which distributes points on the surface uniformly. If false, uses the superellipsoid parametric representation which enables easier perceiving the orientation of the superellipsoids. This only affects the the output of **~superellipsoids_surface** message.
 
-- **`p_world_frame`: "world"**
+- **`world_frame`: "world"**
 
   - World transform frame.
   - TODO: will be used for object tracking
@@ -268,3 +268,4 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 - [ ] update the comments in superellipsoid msgs
 - [ ] decrease the number of published topics if possible
 - [ ] use tf2 instead of tf
+- [ ] sort parameters

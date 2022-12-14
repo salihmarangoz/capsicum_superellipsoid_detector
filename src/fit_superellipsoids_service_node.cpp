@@ -27,41 +27,7 @@ SuperellipsoidFitter::SuperellipsoidFitter(): nhp_("~")
     pc_surf_ros_ == NULL;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::ConstPtr SuperellipsoidFitter::removeActualPointsfromPrediction(pcl::PointCloud<pcl::PointXYZ>::Ptr pc_surf_pred, pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_surf_real)
-{
-  std::vector<int> indices_to_remove;
-  // pcl::getApproximateIndices<pcl::PointXYZ, pcl::PointXYZRGB>(pc_surf_pred, pc_surf_real, indices_to_remove);
-   
-  try 
-  {
-    pcl::search::KdTree<pcl::PointXYZ> tree_pred; 
-    tree_pred.setInputCloud (pc_surf_pred);
-    float radius = 0.015f;
-    for (const auto &point : pc_surf_real->points)
-    {
-        pcl::PointXYZ temp;
-        temp.x = point.x;
-        temp.y = point.y;
-        temp.z = point.z;
-        std::vector<int> point_indices;
-        std::vector<float> point_distances;
-        if(tree_pred.radiusSearch (temp, radius, point_indices, point_distances))
-        {
-            indices_to_remove.insert(indices_to_remove.end(), point_indices.begin(), point_indices.end());
-        }
-    }
-    std::sort( indices_to_remove.begin(), indices_to_remove.end() );
-    indices_to_remove.erase( std::unique( indices_to_remove.begin(), indices_to_remove.end() ), indices_to_remove.end() );
-    ROS_INFO_STREAM("No of indices: "<<indices_to_remove.size());
-    pcl::IndicesConstPtr indices_ptr(new pcl::Indices(indices_to_remove));
-    const auto [inlier_cloud, outlier_cloud] = separateCloudByIndices<pcl::PointXYZ>(pc_surf_pred, indices_ptr); 
-    return outlier_cloud;
-  }
-  catch(const std::exception &e)
-  {
-      ROS_WARN_STREAM("removeActualPointsfromPrediction"<<e.what());
-  }
-}
+
 
 bool SuperellipsoidFitter::processSuperellipsoidFitterCallback(shape_completion_bridge_msgs::FitSuperellipsoids::Request& req, shape_completion_bridge_msgs::FitSuperellipsoids::Response& res)
 {

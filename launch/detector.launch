@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node pkg="capsicum_superellipsoid_detector" type="detector_node" name="capsicum_superellipsoid_detector" output="screen" respawn="true">
+  <node name="superellipsoid_detector_node" pkg="capsicum_superellipsoid_detector" type="superellipsoid_detector_node" output="screen" clear_params="true">
     <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
   </node>
 

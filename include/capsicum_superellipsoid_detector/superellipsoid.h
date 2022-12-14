@@ -1,5 +1,3 @@
-
-
 #ifndef SUPERELLIPSOID_H
 #define SUPERELLIPSOID_H
 
@@ -10,6 +8,7 @@
 #include "ceres/rotation.h"
 #include <pcl/point_cloud.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/extract_indices.h>
 #include <boost/math/special_functions/beta.hpp>
 
 #ifndef DISABLE_ROS_SUPERELLIPSOID_H
@@ -19,7 +18,6 @@
 #ifndef SIGNUM
 #define SIGNUM(x) ((x)>0?+1.:-1.)
 #endif
-
 
 namespace superellipsoid
 {
@@ -49,7 +47,7 @@ public:
   pcl::PointXYZ getEstimatedCenter();
   typename pcl::PointCloud<PointT>::Ptr getCloud();
   pcl::PointCloud<pcl::Normal>::Ptr getNormals();
-  bool fit(bool log_to_stdout, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
+  bool fit(bool log_to_stdout=true, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
   pcl::PointCloud<pcl::PointXYZ>::Ptr estimateMissingSurfaces(double distance_threshold=0.01, int num_samples=1000);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -680,7 +678,26 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
   return true;
 }
 
+// ----------------------------------------------------------------------------------
 
-} // namespace
+
+template<typename PointT>
+std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> separateCloudByIndices(const typename pcl::PointCloud<PointT>::ConstPtr &input_cloud, const pcl::IndicesConstPtr &indices)
+{
+  typename pcl::PointCloud<PointT>::Ptr inlier_cloud(new pcl::PointCloud<PointT>), outlier_cloud(new pcl::PointCloud<PointT>);
+  inlier_cloud->header = input_cloud->header;
+  outlier_cloud->header = input_cloud->header;
+  pcl::ExtractIndices<PointT> extract;
+  extract.setInputCloud(input_cloud);
+  extract.setIndices(indices);
+  extract.setNegative(false);
+  extract.filter(*inlier_cloud);
+  extract.setNegative(true);
+  extract.filter(*outlier_cloud);
+  return std::make_pair(inlier_cloud, outlier_cloud);
+}
+
+
+} // namespace superellipsoid
 #endif // SUPERELLIPSOID_H
 
