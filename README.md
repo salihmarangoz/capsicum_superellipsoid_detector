@@ -110,7 +110,7 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 - **`cost_type`** **: 2**
 
-  The cost function for fitting superellipsoids to the input points. `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` are recommended options.
+  The cost function for fitting superellipsoids to the input points. `RADIAL_EUCLIDIAN_DISTANCE` and `SOLINA` are recommended options. In order to show the residuals, the formulas below are not simplified.
 
   ![f](imgs/formulas/f_.png)
 
@@ -122,11 +122,11 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
   ![lenhert](imgs/formulas/lenhert_.png)
 
-  - `CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE = 2`: Works better with non-equilateral superellipsoids and estimates inside the shape better.
+  - `CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE = 2`: Works better with non-equilateral superellipsoids and estimates inside the shape better. Tends to estimate equally scaled superellipsoids.
 
   ![radial](imgs/formulas/radial_.png)
 
-  - `CostFunctionType::SOLINA = 3`: Solina's distance approximation method with volume constraint. Estimates better for equilateral superellipsoids.
+  - `CostFunctionType::SOLINA = 3`: Solina's distance approximation method with volume constraint.  Tends to estimate smallest possible superellipsoids.
 
   ![solina](imgs/formulas/solina_.png)
 
