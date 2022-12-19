@@ -17,6 +17,7 @@ Also, some prototypes and experiments (implemented in Python) can be found in th
 ![demo](imgs/demo.gif)
 
 
+
 ## Paper and Video
 
 Screen recording while running the project can be seen [here](https://www.youtube.com/watch?v=kX0oy-pKSh4).
@@ -36,12 +37,44 @@ S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape 
 }
 ```
 
-TODO: TOC
+
 
 
 ## Installation
 
-### Related Packages
+### Dependencies
+
+Dependencies needed **only** for compiling and running the node (excluding launch files).
+
+- Ubuntu 20.04 + ROS Noetic
+
+- **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**:
+
+   ```bash
+   $ git clone https://github.com/salihmarangoz/superellipsoid_msgs
+   ```
+
+
+- **[Ceres Solver](http://ceres-solver.org/installation.html)**:
+
+  ```bash
+  $ sudo apt install libceres-dev # version 1.x.x also works
+  ```
+  
+- **[OpenCV](https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html)**:
+
+   ```bash
+   $ sudo apt install libopencv-dev # tested with 4.2.0
+   ```
+
+- Other public ROS dependencies defined in `package.xml`.
+
+  ```bash
+  $ cd catkin_ws/
+  $ rosdep install --from-paths src --ignore-src -r
+  ```
+
+### Optional Dependencies
 
 Packages needed for running launch files. Try running `start_bag.launch` if you don't want to install these packages.
 
@@ -59,27 +92,6 @@ $ wstool init . ./voxblox/voxblox_ssh.rosinstall
 - [**roi_viewpoint_planner**](https://github.com/Eruvae/roi_viewpoint_planner) (robotic arm planner)
 - [**pointcloud_roi**](https://github.com/Eruvae/pointcloud_roi) (alternative for agrobot_mrcnn_ros on simulation environment for mask extraction)
 - agrobot_mrcnn_ros (deep learning model for detecting sweet peppers in camera images)
-
-### Package Dependencies
-
-Dependencies needed **only** for compiling and running the node (excluding launch files).
-
-- Ubuntu 20.04 + ROS Noetic
-- **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**
-
-
-- **[Ceres Solver](http://ceres-solver.org/installation.html):** (I have developed the project using the version 2.x.x but both versions should be OK.)
-
-  ```bash
-  $ sudo apt install libceres-dev
-  ```
-  
-- Others: Octomap, PCL, etc. Defined in `package.xml`.
-
-```bash
-$ cd catkin_ws/
-$ rosdep install --from-paths src --ignore-src -r # install missing dependencies
-```
 
 ### Compile
 

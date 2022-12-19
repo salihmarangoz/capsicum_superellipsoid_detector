@@ -25,6 +25,12 @@ SuperellipsoidDetector::~SuperellipsoidDetector()
   is_started = true;
 }
 
+void SuperellipsoidDetector::configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level)
+{
+  ROS_INFO("config_callback");
+  m_config = config;
+}
+
 void SuperellipsoidDetector::startNode()
 {
   if (is_started)
@@ -35,14 +41,16 @@ void SuperellipsoidDetector::startNode()
 
   // ROS Publishers
   m_superellipsoids_pub = m_priv_nh.advertise<superellipsoid_msgs::SuperellipsoidArray>("superellipsoids", 2, true);
-  m_clusters_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("clusters", 2, true);
-  m_superellipsoids_surface_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_surface", 2, true);
-  m_centers_prior_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);
-  m_centers_optimized_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_optimized", 2, true);
-  m_superellipsoids_volume_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_volume", 2, true);
-  m_surface_normals_marker_pub = m_priv_nh.advertise<visualization_msgs::MarkerArray>("surface_normals_marker", 2, true);
   m_xyzlnormal_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("xyz_label_normal", 2, true);
   m_missing_surfaces_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("missing_surfaces", 2, true);
+
+  // ROS Publishers (debugging/visualization purposes)
+  m_superellipsoids_surface_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_surface", 2, true);
+  m_clusters_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("clusters", 2, true);
+  m_centers_prior_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);
+  m_centers_optimized_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_optimized", 2, true);
+  m_surface_normals_marker_pub = m_priv_nh.advertise<visualization_msgs::MarkerArray>("surface_normals_marker", 2, true);
+  m_superellipsoids_volume_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_volume", 2, true);
 
   // ROS Subscribers
   m_pc_sub = m_nh.subscribe("pc_in", 1, &SuperellipsoidDetector::pcCallback, this); // queue size: 2 for throughput, 1 for low latency
@@ -51,12 +59,6 @@ void SuperellipsoidDetector::startNode()
 void SuperellipsoidDetector::startService()
 {
   // TODO
-}
-
-void SuperellipsoidDetector::configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level)
-{
-  ROS_INFO("config_callback");
-  m_config = config;
 }
 
 void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
@@ -381,44 +383,3 @@ void SuperellipsoidDetector::processInput(const sensor_msgs::PointCloud2Ptr &pc2
 }
 
 } // namespace superellipsoid
-
-
-
-
-/*
-pcl::PointCloud<pcl::PointXYZ>::ConstPtr SuperellipsoidFitter::removeActualPointsfromPrediction(pcl::PointCloud<pcl::PointXYZ>::Ptr pc_surf_pred, pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_surf_real)
-{
-  std::vector<int> indices_to_remove;
-  // pcl::getApproximateIndices<pcl::PointXYZ, pcl::PointXYZRGB>(pc_surf_pred, pc_surf_real, indices_to_remove);
-   
-  try 
-  {
-    pcl::search::KdTree<pcl::PointXYZ> tree_pred; 
-    tree_pred.setInputCloud (pc_surf_pred);
-    float radius = 0.015f;
-    for (const auto &point : pc_surf_real->points)
-    {
-        pcl::PointXYZ temp;
-        temp.x = point.x;
-        temp.y = point.y;
-        temp.z = point.z;
-        std::vector<int> point_indices;
-        std::vector<float> point_distances;
-        if(tree_pred.radiusSearch (temp, radius, point_indices, point_distances))
-        {
-            indices_to_remove.insert(indices_to_remove.end(), point_indices.begin(), point_indices.end());
-        }
-    }
-    std::sort( indices_to_remove.begin(), indices_to_remove.end() );
-    indices_to_remove.erase( std::unique( indices_to_remove.begin(), indices_to_remove.end() ), indices_to_remove.end() );
-    ROS_INFO_STREAM("No of indices: "<<indices_to_remove.size());
-    pcl::IndicesConstPtr indices_ptr(new pcl::Indices(indices_to_remove));
-    const auto [inlier_cloud, outlier_cloud] = separateCloudByIndices<pcl::PointXYZ>(pc_surf_pred, indices_ptr); 
-    return outlier_cloud;
-  }
-  catch(const std::exception &e)
-  {
-      ROS_WARN_STREAM("removeActualPointsfromPrediction"<<e.what());
-  }
-}
-*/
