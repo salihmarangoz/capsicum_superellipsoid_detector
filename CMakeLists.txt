@@ -22,9 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   octomap_ros
   octomap_msgs
-  octomap_vpp
   superellipsoid_msgs
-#  shape_completion_bridge_msgs
   image_transport
   cv_bridge
   dynamic_reconfigure
@@ -165,16 +163,23 @@ target_link_libraries(${PROJECT_NAME}
 
 
 add_executable(superellipsoid_detector_node src/superellipsoid_detector_node.cpp)
+add_executable(superellipsoid_detector_service src/superellipsoid_detector_service.cpp)
 #add_executable(fit_superellipsoids_service_node src/fit_superellipsoids_service_node.cpp) # TODO
 #add_executable(simulate_depth_noise_node src/simulate_depth_noise.cpp)
 #add_executable(simple_roi_detector_node src/simple_roi_detector.cpp)
 
 add_dependencies(superellipsoid_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(superellipsoid_detector_service ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(fit_superellipsoids_service_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}) # TODO
 #add_dependencies(simulate_depth_noise_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(superellipsoid_detector_node
+  ${PROJECT_NAME}
+  ${OCTOMAP_LIBRARIES}
+)
+
+target_link_libraries(superellipsoid_detector_service
   ${PROJECT_NAME}
   ${OCTOMAP_LIBRARIES}
 )

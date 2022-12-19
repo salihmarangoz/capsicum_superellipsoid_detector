@@ -65,11 +65,7 @@ $ wstool init . ./voxblox/voxblox_ssh.rosinstall
 Dependencies needed **only** for compiling and running the node (excluding launch files).
 
 - Ubuntu 20.04 + ROS Noetic
-
 - **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**
-- **[octomap_vpp](https://github.com/Eruvae/octomap_vpp)**
-  - Only used for publishing **`~superellipsoids_volume_octomap`**. 
-  - Also, **[octomap_vpp_rviz_plugin](https://github.com/Eruvae/octomap_vpp_rviz_plugin)** may be useful for visualization.
 
 
 - **[Ceres Solver](http://ceres-solver.org/installation.html):** (I have developed the project using the version 2.x.x but both versions should be OK.)
@@ -221,8 +217,6 @@ Note: Computation resources will only be used for subscribed topics.
   - XYZ pointcloud for centers computed after the superellipsoid optimization. Centers for failed optimizations will not be published. Recommended only for debugging.
 - **`~superellipsoids_volume`** ("sensor_msgs/PointCloud2")
   - XYZ pointcloud for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. 
-- **`~superellipsoids_volume_octomap`** ("octomap_msgs::Octomap")
-  - XYZ octomap_vpp::CountingOcTree for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. The count value represents cluster index of the superellipsoid.
 - **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
   - Arrow markers for visualizing surface normals. Surface normals are computed w.r.t. predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
 - **`~xyz_label_normal`** ("sensor_msgs/PointCloud2")

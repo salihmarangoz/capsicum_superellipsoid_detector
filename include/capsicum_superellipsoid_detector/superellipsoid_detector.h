@@ -27,9 +27,6 @@
 #include <octomap_ros/conversions.h>
 #include <octomap_msgs/conversions.h>
 #include <octomap/OcTree.h>
-#include <octomap_vpp/CountingOcTree.h>
-#include <octomap_vpp/NearestRegionOcTree.h>
-#include <octomap_vpp/octomap_pcl.h>
 #include <pcl/point_cloud.h>
 // TODO ===========================================================
 
@@ -47,6 +44,7 @@ public:
     void pcCallback(const sensor_msgs::PointCloud2Ptr &pc2);
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
 
+    bool is_started = false;
     ros::NodeHandle &m_nh;
     ros::NodeHandle &m_priv_nh;
     capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig m_config;
@@ -58,7 +56,6 @@ public:
         m_centers_optimized_pub,
         m_superellipsoids_surface_pub,
         m_superellipsoids_volume_pub,
-        m_superellipsoids_volume_octomap_pub,
         m_surface_normals_marker_pub,
         m_xyzlnormal_pub,
         m_missing_surfaces_pub;

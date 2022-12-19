@@ -49,10 +49,7 @@
   <depend>nodelet</depend>
   <depend>dynamic_reconfigure</depend>
 
-
-  <depend>octomap_vpp</depend>
   <depend>superellipsoid_msgs</depend>
-  <!--<depend>shape_completion_bridge_msgs</depend>-->
 
   <export>
     <nodelet plugin="${prefix}/nodelet_plugins.xml" />

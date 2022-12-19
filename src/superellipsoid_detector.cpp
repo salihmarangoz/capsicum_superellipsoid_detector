@@ -18,11 +18,21 @@ SuperellipsoidDetector::SuperellipsoidDetector(ros::NodeHandle &nh, ros::NodeHan
 
 SuperellipsoidDetector::~SuperellipsoidDetector()
 {
-
+  if (is_started)
+  {
+    ROS_ERROR("Node or service is already started. Only one can be started in a single process.");
+  }
+  is_started = true;
 }
 
 void SuperellipsoidDetector::startNode()
 {
+  if (is_started)
+  {
+    ROS_ERROR("Node or service is already started. Only one can be started in a single process.");
+  }
+  is_started = true;
+
   // ROS Publishers
   m_superellipsoids_pub = m_priv_nh.advertise<superellipsoid_msgs::SuperellipsoidArray>("superellipsoids", 2, true);
   m_clusters_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("clusters", 2, true);
@@ -30,7 +40,6 @@ void SuperellipsoidDetector::startNode()
   m_centers_prior_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);
   m_centers_optimized_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_optimized", 2, true);
   m_superellipsoids_volume_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_volume", 2, true);
-  m_superellipsoids_volume_octomap_pub = m_priv_nh.advertise<octomap_msgs::Octomap>("superellipsoids_volume_octomap", 2, true);
   m_surface_normals_marker_pub = m_priv_nh.advertise<visualization_msgs::MarkerArray>("surface_normals_marker", 2, true);
   m_xyzlnormal_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("xyz_label_normal", 2, true);
   m_missing_surfaces_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("missing_surfaces", 2, true);
@@ -222,33 +231,6 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
     pcl::toROSMsg(*debug_pc, *debug_pc_ros);
     debug_pc_ros->header = pc_pcl_tf_ros_header;
     m_superellipsoids_volume_pub.publish(debug_pc_ros);
-  }
-
-  // debug: visualize converged superellipsoids volume via octomap_vpp and include cluster idx information
-  if (m_superellipsoids_volume_octomap_pub.getNumSubscribers() > 0)
-  {
-    std::shared_ptr<octomap_vpp::CountingOcTree> countingoctree(new octomap_vpp::CountingOcTree(m_config.octree_volume_resolution));
-
-    int cluster_idx = 0;
-    for (const auto &se : converged_superellipsoids)
-    {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr volume_pc = se->sampleVolume(m_config.octree_volume_resolution/3.0); // TODO: for better estimation on grids sample more dense to reduce artifacts caused by rotation
-
-      for (const auto &p : *volume_pc)
-      {
-        octomap::point3d loc(p.x, p.y, p.z);
-        countingoctree->setNodeCount(loc, cluster_idx);
-      }
-
-      cluster_idx++;
-    }
-
-    std::shared_ptr<octomap_msgs::Octomap> debug_octomap(new octomap_msgs::Octomap());
-    //debug_octomap->header.frame_id = p_world_frame;
-    //debug_octomap->header.stamp = ros::Time::now();
-    debug_octomap->header = pc_pcl_tf_ros_header;
-    octomap_msgs::fullMapToMsg(*countingoctree, *debug_octomap);
-    m_superellipsoids_volume_octomap_pub.publish(*debug_octomap);
   }
 
   // debug: visualize surface normals via rviz markers
