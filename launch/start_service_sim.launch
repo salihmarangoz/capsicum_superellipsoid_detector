@@ -49,7 +49,7 @@
   </node>
 -->
 
-    <node pkg="pointcloud_roi" type="filter_red_clusters_node" name="detect_roi">
+    <node pkg="capsicum_superellipsoid_detector" type="simple_roi_detector_node" name="detect_roi">
     <remap from="~input" to="/camera/depth/points" />
     <remap from="~map_frame" to="/roi_viewpoint_planner/map_frame" />´
     <param name="radius_filter/radius_search" value="0.05"/>

@@ -80,18 +80,16 @@ Packages needed for running launch files. Try running `start_bag.launch` if you 
 
 - **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)** (3D mapping)
 
-```
-$ cd ~/catkin_ws/src
-$ mkdir voxblox
-$ cd voxblox
-$ git clone git@github.com:ethz-asl/voxblox.git
-$ wstool init . ./voxblox/voxblox_ssh.rosinstall
-```
+  ```bash
+  $ cd ~/catkin_ws/src
+  $ mkdir voxblox
+  $ cd voxblox
+  $ git clone git@github.com:ethz-asl/voxblox.git
+  $ wstool init . ./voxblox/voxblox_ssh.rosinstall
+  ```
 
-- [**ur_with_cam_gazebo**](https://github.com/Eruvae/ur_with_cam_gazebo) (simulator)
-- [**roi_viewpoint_planner**](https://github.com/Eruvae/roi_viewpoint_planner) (robotic arm planner)
-- [**pointcloud_roi**](https://github.com/Eruvae/pointcloud_roi) (alternative for agrobot_mrcnn_ros on simulation environment for mask extraction)
-- agrobot_mrcnn_ros (deep learning model for detecting sweet peppers in camera images)
+- [**ur_with_cam_gazebo**](https://github.com/Eruvae/ur_with_cam_gazebo)
+- TODO: agrobot_mrcnn_ros (deep learning model for detecting sweet peppers in camera images)
 
 ### Compile
 
