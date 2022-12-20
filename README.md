@@ -44,7 +44,7 @@ S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape 
 
 ### Dependencies
 
-Dependencies needed **only** for compiling and running the node (excluding launch files).
+Dependencies needed for compiling and running the node.
 
 - Ubuntu 20.04 + ROS Noetic
 
@@ -76,7 +76,7 @@ Dependencies needed **only** for compiling and running the node (excluding launc
 
 ### Optional Dependencies
 
-Packages needed for running launch files. Try running `start_bag.launch` if you don't want to install these packages.
+Packages needed for some launch files.
 
 - **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)** (3D mapping)
 
@@ -213,6 +213,12 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ### Published Topics
 
+TODO: processing_mode
+
+TODO: position_threshold
+
+TODO: orientation_threshold
+
 Note: Computation resources will only be used for subscribed topics.
 
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
@@ -243,6 +249,14 @@ Note: Computation resources will only be used for subscribed topics.
 TODO
 
 There are no services for the written node. But voxblox needs a `std_srvs/Empty` for publishing pointclouds of mapped plants which will be also triggering the computation of the superellipsoid detector node. Currently this task is assigned to `scripts/trigger_voxblox.py` which calls the related service in a fixed interval.
+
+
+
+FitSuperellipsoid
+
+FitSuperellipsoids
+
+ProcessSingleMessage
 
 
 

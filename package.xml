@@ -48,6 +48,7 @@
   <depend>cv_bridge</depend>
   <depend>nodelet</depend>
   <depend>dynamic_reconfigure</depend>
+  <depend>message_generation</depend>
 
   <depend>superellipsoid_msgs</depend>
 

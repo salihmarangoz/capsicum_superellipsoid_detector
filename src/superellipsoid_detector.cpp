@@ -16,14 +16,7 @@ SuperellipsoidDetector::SuperellipsoidDetector(ros::NodeHandle &nh, ros::NodeHan
   m_tf_listener = std::make_unique<tf::TransformListener>();
 }
 
-SuperellipsoidDetector::~SuperellipsoidDetector()
-{
-  if (is_started)
-  {
-    ROS_ERROR("Node or service is already started. Only one can be started in a single process.");
-  }
-  is_started = true;
-}
+SuperellipsoidDetector::~SuperellipsoidDetector(){}
 
 void SuperellipsoidDetector::configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level)
 {
@@ -58,7 +51,13 @@ void SuperellipsoidDetector::startNode()
 
 void SuperellipsoidDetector::startService()
 {
-  // TODO
+  if (is_started)
+  {
+    ROS_ERROR("Node or service is already started. Only one can be started in a single process.");
+  }
+  is_started = true;
+
+  
 }
 
 void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)

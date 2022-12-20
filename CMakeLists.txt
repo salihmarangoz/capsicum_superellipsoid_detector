@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   cv_bridge
   dynamic_reconfigure
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -76,11 +77,11 @@ add_definitions(${PCL_DEFINITIONS})
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  FitSuperellipsoid.srv
+  FitSuperellipsoids.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -90,10 +91,10 @@ add_definitions(${PCL_DEFINITIONS})
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs#   std_msgs#   tf2_geometry_msgs#   tf2_sensor_msgs#   visualization_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  superellipsoid_msgs sensor_msgs dynamic_reconfigure #   std_msgs#   tf2_geometry_msgs#   tf2_sensor_msgs#   visualization_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
