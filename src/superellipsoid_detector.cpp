@@ -138,20 +138,20 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
   elapsed_total+=elapsed_optimization;
   // ----------------------------------------------------------------------------------------
   auto t_start_missing_surface = std::chrono::high_resolution_clock::now();
-
-  // TODO: make missing surface estimation optional
-
   std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> missing_surfaces;
-  for (const auto &se : converged_superellipsoids)
+  if (m_config.estimate_missing_surfaces)
   {
-    missing_surfaces.push_back( se->estimateMissingSurfaces(m_config.missing_surfaces_threshold, m_config.missing_surfaces_num_samples) );
+    for (const auto &se : converged_superellipsoids)
+    {
+      missing_surfaces.push_back( se->estimateMissingSurfaces(m_config.missing_surfaces_threshold, m_config.missing_surfaces_num_samples) );
+    }
   }
 
   double elapsed_missing_surface = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start_missing_surface).count();
   elapsed_total+=elapsed_missing_surface;
   // ----------------------------------------------------------------------------------------
   auto t_start_ros_messages = std::chrono::high_resolution_clock::now();
-
+ 
   // debug: visualize clusters
   if (m_clusters_pub.getNumSubscribers() > 0)
   {
@@ -322,7 +322,7 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
   }
 
   // debug: visualize missing surfaces
-  if (m_missing_surfaces_pub.getNumSubscribers() > 0)
+  if (m_missing_surfaces_pub.getNumSubscribers() > 0 && m_config.estimate_missing_surfaces)
   {
     pcl::PointCloud<pcl::PointXYZLNormal>::Ptr debug_pc(new pcl::PointCloud<pcl::PointXYZLNormal>);
 

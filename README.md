@@ -219,6 +219,8 @@ TODO: position_threshold
 
 TODO: orientation_threshold
 
+TODO: estimate_missing_surfaces
+
 Note: Computation resources will only be used for subscribed topics.
 
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
