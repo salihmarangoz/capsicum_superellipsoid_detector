@@ -57,7 +57,7 @@ void SuperellipsoidDetector::startService()
   }
   is_started = true;
 
-  
+
 }
 
 void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
@@ -112,7 +112,6 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
   {
     current_se->estimateNormals(m_config.estimate_normals_search_radius); // search_radius
     current_se->estimateClusterCenter(m_config.estimate_cluster_center_regularization); // regularization
-    current_se->flipNormalsTowardsClusterCenter(); // useful for visualization
   }
 
   // Optimize Superellipsoids
@@ -170,7 +169,7 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
     sea.header = pc_pcl_tf_ros_header;
     for (const auto &se : converged_superellipsoids)
     {
-      superellipsoid_msgs::Superellipsoid se_msg = se->generateRosMessage();
+      superellipsoid_msgs::Superellipsoid se_msg = superellipsoid::toROSMsg(*se);
       se_msg.header = pc_pcl_tf_ros_header;
       sea.superellipsoids.push_back(se_msg);
     }

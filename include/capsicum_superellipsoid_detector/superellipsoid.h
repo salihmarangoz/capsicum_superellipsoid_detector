@@ -10,10 +10,7 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
 #include <boost/math/special_functions/beta.hpp>
-
-#ifndef DISABLE_ROS_SUPERELLIPSOID_H
-#include <superellipsoid_msgs/Superellipsoid.h>
-#endif
+#include <boost/math/special_functions/sign.hpp>
 
 #ifndef SIGNUM
 #define SIGNUM(x) ((x)>0?+1.:-1.)
@@ -36,45 +33,9 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
-template <typename PointT>
-class Superellipsoid
-{
-public:
-  Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_in);
-  pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius);
-  void flipNormalsTowardsClusterCenter();
-  pcl::PointXYZ estimateClusterCenter(float regularization);
-  pcl::PointXYZ getEstimatedCenter();
-  typename pcl::PointCloud<PointT>::Ptr getCloud();
-  pcl::PointCloud<pcl::Normal>::Ptr getNormals();
-  bool fit(bool log_to_stdout=true, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr estimateMissingSurfaces(double distance_threshold=0.01, int num_samples=1000);
-
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// If you are creating the object with Superellipsoid ROS message then don't use the methods defined above unless specifying "cloud_in"
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifndef DISABLE_ROS_SUPERELLIPSOID_H
-  Superellipsoid(const superellipsoid_msgs::Superellipsoid &se);
-  superellipsoid_msgs::Superellipsoid generateRosMessage() const;
-#endif
-
-  pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples=1000) const;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceParametricDefinition(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, double u_res=0.05, double v_res=0.05) const;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool use_fibonacci_projection=false, bool apply_transformation=true, int num_samples_fibonacci=1000, double u_res_parametric=0.05, double v_res_parametric=0.05) const;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true) const;
-  pcl::PointXYZ getOptimizedCenter() const;
-  double computeVolume() const;
-  std::map<std::string, double> getParameters() const;
-  static double c_func(double w, double m);
-  static double s_func(double w, double m);
-
-//private:
-  typename pcl::PointCloud<PointT>::Ptr cloud_in;
-  pcl::PointCloud<pcl::Normal>::Ptr normals_in;
-  pcl::PointXYZ estimated_center;
-  std::shared_ptr<std::vector<double>> parameters_ptr;
-};
-
+//////////////////////////////////////////////////////////////////
+//////// SUPERELLIPSOID ERROR ////////////////////////////////////
+//////////////////////////////////////////////////////////////////
 
 struct SuperellipsoidError {
   SuperellipsoidError(double x_, double y_, double z_, double *priors_, CostFunctionType cost_type_, double prior_center_, double prior_scaling_);
@@ -104,6 +65,115 @@ struct SuperellipsoidError {
   const double prior_scaling;
 };
 
+inline SuperellipsoidError::SuperellipsoidError(double x_, double y_, double z_, double *priors_, CostFunctionType cost_type_, double prior_center_, double prior_scaling_) : x(x_), y(y_), z(z_), priors(priors_), cost_type(cost_type_), prior_center(prior_center_), prior_scaling(prior_scaling_) {}
+
+template <typename T> bool SuperellipsoidError::operator()(const T* const parameters, T* residual) const
+{
+  const T a = parameters[0];
+  const T b = parameters[1];
+  const T c = parameters[2];
+  const T e1 = parameters[3];
+  const T e2 = parameters[4];
+  const T tx = parameters[5];
+  const T ty = parameters[6];
+  const T tz = parameters[7];
+  const T roll = parameters[8];
+  const T pitch = parameters[9];
+  const T yaw = parameters[10];
+
+  const double prior_tx = priors[0];
+  const double prior_ty = priors[1];
+  const double prior_tz = priors[2];
+
+  // translation
+  auto x_ = x - tx;
+  auto y_ = y - ty;
+  auto z_ = z - tz;
+
+  // rotation
+  const T angles[3] = {-roll, -pitch, -yaw};
+  T rotation_matrix[9];
+  ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
+  auto rotation_matrix_ = Eigen::Matrix<T,3,3>(rotation_matrix);
+
+  Eigen::Matrix<T, 3, 1> point {x_,y_,z_};
+
+  auto point_ = rotation_matrix_ * point;
+
+  const T x__ = point_[0];
+  const T y__ = point_[1];
+  const T z__ = point_[2];
+
+  /////////////////////////// Cost /////////////////////////////////////
+  const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
+  switch (cost_type)
+  {
+    case CostFunctionType::NAIVE: // Naive solution using implicit definition of the superellipsoid
+      residual[0] = f1 - 1.;
+      break;
+    case CostFunctionType::LEHNERT: // Cost function mentioned in paper; "Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting"
+      residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
+      break;
+    case CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE: // Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
+      residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.));
+      break;
+    case CostFunctionType::SOLINA: // Squared version of the cost function mentioned in "Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting"
+      residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.);
+      break;
+    case CostFunctionType::SOLINA_DISTANCE: // SOLINA without volume constraint ( sqrt(abc) )
+      residual[0] = abs(pow(f1,e1/2.) - 1.);
+      break;
+  }
+
+  /////////////////////////// Priors /////////////////////////////////////
+  residual[1] = prior_center * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
+  residual[2] = prior_scaling * sqrt(0.001 + pow(a - b, 2) + pow(b - c,2) + pow(c - a,2));
+
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////
+//////// SUPERELLIPSOID CLASS ////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+template <typename PointT>
+class Superellipsoid
+{
+public:
+  Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_in);
+  pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius, bool flip_normal_towards_centerpoint=true);
+  pcl::PointXYZ estimateClusterCenter(float regularization);
+  pcl::PointXYZ getEstimatedCenter();
+  typename pcl::PointCloud<PointT>::Ptr getCloud();
+  pcl::PointCloud<pcl::Normal>::Ptr getNormals();
+  bool fit(bool log_to_stdout=true, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr estimateMissingSurfaces(double distance_threshold=0.01, int num_samples=1000);
+  //--------------- TODO
+  pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples=1000) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceParametricDefinition(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, double u_res=0.05, double v_res=0.05) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool use_fibonacci_projection=false, bool apply_transformation=true, int num_samples_fibonacci=1000, double u_res_parametric=0.05, double v_res_parametric=0.05) const;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true) const;
+  pcl::PointXYZ getOptimizedCenter() const;
+  double computeVolume() const;
+  std::map<std::string, double> getParameters() const;
+  static double c_func(double w, double m);
+  static double s_func(double w, double m);
+
+//private:
+  typename pcl::PointCloud<PointT>::Ptr cloud_in;
+  pcl::PointCloud<pcl::Normal>::Ptr normals_in;
+  pcl::PointXYZ estimated_center;
+  std::shared_ptr<std::vector<double>> parameters_ptr;
+};
+
+template <typename PointT>
+Superellipsoid<PointT>::Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_input)
+{
+  cloud_in = cloud_input;
+  normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
+  parameters_ptr = std::make_shared<std::vector<double>>();
+}
+
 
 template <typename PointT>
 double Superellipsoid<PointT>::c_func(double w, double m) {return SIGNUM(cos(w)) * pow(abs(cos(w)), m);}
@@ -114,55 +184,7 @@ double Superellipsoid<PointT>::s_func(double w, double m) {return SIGNUM(sin(w))
 
 
 template <typename PointT>
-Superellipsoid<PointT>::Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_input)
-{
-  cloud_in = cloud_input;
-  normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
-  parameters_ptr = std::make_shared<std::vector<double>>();
-}
-
-#ifndef DISABLE_ROS_SUPERELLIPSOID_H
-template <typename PointT>
-Superellipsoid<PointT>::Superellipsoid(const superellipsoid_msgs::Superellipsoid &se)
-{
-  normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
-  parameters_ptr = std::make_shared<std::vector<double>>();
-  (*parameters_ptr)[0] = se.a;
-  (*parameters_ptr)[1] = se.b;
-  (*parameters_ptr)[2] = se.c;
-  (*parameters_ptr)[3] = se.e1;
-  (*parameters_ptr)[4] = se.e2;
-  (*parameters_ptr)[5] = se.tx;
-  (*parameters_ptr)[6] = se.ty;
-  (*parameters_ptr)[7] = se.tz;
-  (*parameters_ptr)[8] = se.roll;
-  (*parameters_ptr)[9] = se.pitch;
-  (*parameters_ptr)[10] = se.yaw;
-}
-
-template <typename PointT>
-superellipsoid_msgs::Superellipsoid Superellipsoid<PointT>::generateRosMessage() const
-{
-  superellipsoid_msgs::Superellipsoid se;
-  se.a = (*parameters_ptr)[0];
-  se.b = (*parameters_ptr)[1];
-  se.c = (*parameters_ptr)[2];
-  se.e1 = (*parameters_ptr)[3];
-  se.e2 = (*parameters_ptr)[4];
-  se.tx = (*parameters_ptr)[5];
-  se.ty = (*parameters_ptr)[6];
-  se.tz = (*parameters_ptr)[7];
-  se.roll = (*parameters_ptr)[8];
-  se.pitch = (*parameters_ptr)[9];
-  se.yaw = (*parameters_ptr)[10];
-  se.volume = computeVolume();
-  return se;
-}
-#endif
-
-
-template <typename PointT>
-pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius)
+pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius, bool flip_normal_towards_centerpoint)
 {
   pcl::NormalEstimation<PointT, pcl::Normal> ne;
   typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT> ());
@@ -171,25 +193,23 @@ pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float 
   ne.setRadiusSearch (search_radius); // Use all neighbors in a sphere of radius 3cm (0.03f) might be a good value
   normals_in->points.reserve(cloud_in->points.size());
   ne.compute (*normals_in);
+
+  if (flip_normal_towards_centerpoint)
+  {
+    for (size_t i = 0; i < normals_in->size(); i++)
+    {
+      pcl::flipNormalTowardsViewpoint(cloud_in->points.at(i),
+                                      estimated_center.x,
+                                      estimated_center.y,
+                                      estimated_center.z,
+                                      normals_in->at(i).normal_x,
+                                      normals_in->at(i).normal_y,
+                                      normals_in->at(i).normal_z);
+    }
+  }
+
   return normals_in;
 }
-
-
-template <typename PointT>
-void Superellipsoid<PointT>::flipNormalsTowardsClusterCenter()
-{
-  for (size_t i = 0; i < normals_in->size(); i++)
-  {
-    pcl::flipNormalTowardsViewpoint(cloud_in->points.at(i),
-                                    estimated_center.x,
-                                    estimated_center.y,
-                                    estimated_center.z,
-                                    normals_in->at(i).normal_x,
-                                    normals_in->at(i).normal_y,
-                                    normals_in->at(i).normal_z);
-  }
-}
-
 
 // Source: https://silo.tips/download/least-squares-intersection-of-lines
 template <typename PointT>
@@ -599,87 +619,8 @@ double Superellipsoid<PointT>::computeVolume() const
 // ----------------------------------------------------------------------------------
 
 
-inline SuperellipsoidError::SuperellipsoidError(double x_, double y_, double z_, double *priors_, CostFunctionType cost_type_, double prior_center_, double prior_scaling_) : x(x_), y(y_), z(z_), priors(priors_), cost_type(cost_type_), prior_center(prior_center_), prior_scaling(prior_scaling_) {}
-
-
-template <typename T> bool SuperellipsoidError::operator()(const T* const parameters, T* residual) const
-{
-  const T a = parameters[0];
-  const T b = parameters[1];
-  const T c = parameters[2];
-  const T e1 = parameters[3];
-  const T e2 = parameters[4];
-  const T tx = parameters[5];
-  const T ty = parameters[6];
-  const T tz = parameters[7];
-  const T roll = parameters[8];
-  const T pitch = parameters[9];
-  const T yaw = parameters[10];
-
-  const double prior_tx = priors[0];
-  const double prior_ty = priors[1];
-  const double prior_tz = priors[2];
-
-  // translation
-  auto x_ = x - tx;
-  auto y_ = y - ty;
-  auto z_ = z - tz;
-
-  // rotation
-  const T angles[3] = {-roll, -pitch, -yaw};
-  T rotation_matrix[9];
-  ceres::EulerAnglesToRotationMatrix(angles, 3, rotation_matrix);
-  auto rotation_matrix_ = Eigen::Matrix<T,3,3>(rotation_matrix);
-
-  Eigen::Matrix<T, 3, 1> point {x_,y_,z_};
-
-  auto point_ = rotation_matrix_ * point;
-
-  const T x__ = point_[0];
-  const T y__ = point_[1];
-  const T z__ = point_[2];
-
-  /////////////////////////// Cost /////////////////////////////////////
-  const T f1 = pow(pow(abs(x__/a), 2./e2) + pow(abs(y__/b), 2./e2), e2/e1) + pow(abs(z__/c), 2./e1);
-  switch (cost_type)
-  {
-    case CostFunctionType::NAIVE:
-      // 0) FAILED. Naive solution using implicit definition of the superellipsoid
-      //    Doesn't fit well
-      residual[0] = f1 - 1.;
-      break;
-    case CostFunctionType::LEHNERT:
-      // 1) MODERATE. Cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-      //    Have problems while optimizing rotations. also the cost function looks double squared.
-      //    "Grasp Rotation from Crop" step is not applied since we lack data points and also fruits are vertical in general.
-      residual[0] = sqrt(a*b*c) * (pow(f1,e1) - 1.);
-      break;
-    case CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE:
-      // 2) GOOD. Cost function based on distance to the surface approximation (by radial euclidian distances) mentioned here https://cse.buffalo.edu/~jryde/cse673/files/superquadrics.pdf
-      //    Fits well enough even though this is not a super good approximation inside of the shape
-      residual[0] = sqrt(pow(x__,2.)+pow(y__,2.)+pow(z__,2.)) * abs(1. - pow(f1, -e1/2.));
-      break;
-    case CostFunctionType::SOLINA:
-      // 3) GOOD. Corrected version of the cost function mentioned in Sweet Pepper Pose Detection and Grasping for Automated Crop Harvesting
-      //    Fits well enough.
-      residual[0] = sqrt(a*b*c) * abs(pow(f1,e1/2.) - 1.);
-      break;
-    case CostFunctionType::SOLINA_DISTANCE:
-      // 4) FAILED. SOLINA without sqrt(abc)
-      //    Doesn't work well.
-      residual[0] = abs(pow(f1,e1/2.) - 1.);
-      break;
-  }
-
-  /////////////////////////// Priors /////////////////////////////////////
-  residual[1] = prior_center * sqrt(0.001 + pow(tx - prior_tx, 2) + pow(ty - prior_ty, 2) + pow(tz - prior_tz, 2));
-  residual[2] = prior_scaling * sqrt(0.001 + pow(a - b, 2) + pow(b - c,2) + pow(c - a,2));
-
-  return true;
-}
-
 // ----------------------------------------------------------------------------------
-
+// TODO
 
 template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> separateCloudByIndices(const typename pcl::PointCloud<PointT>::ConstPtr &input_cloud, const pcl::IndicesConstPtr &indices)

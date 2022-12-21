@@ -9,7 +9,7 @@ add_compile_options(-std=c++14)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  message_filters
+#  message_filters
   pcl_ros
   roscpp
   rospy

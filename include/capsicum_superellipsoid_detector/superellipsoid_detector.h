@@ -2,17 +2,23 @@
 #define __SUPERELLIPSOID_DETECTOR_H__
 
 #include <ros/ros.h>
+
+// reconfigure
 #include <dynamic_reconfigure/server.h>
 #include <capsicum_superellipsoid_detector/SuperellipsoidDetectorConfig.h>
 
-// TODO ===========================================================
-#include "capsicum_superellipsoid_detector/superellipsoid.h"
-#include "capsicum_superellipsoid_detector/clustering.h"
-#include <chrono>
-#include <ros/ros.h>
-//#include <message_filters/subscriber.h>
+// services
+#include <capsicum_superellipsoid_detector/FitSuperellipsoid.h>
+#include <capsicum_superellipsoid_detector/FitSuperellipsoids.h>
+#include <std_srvs/Empty.h>
+
+// topics
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
+
+// TODO ===========================================================
+#include <chrono>
+#include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
@@ -29,6 +35,10 @@
 #include <octomap/OcTree.h>
 #include <pcl/point_cloud.h>
 // TODO ===========================================================
+
+#include "capsicum_superellipsoid_detector/superellipsoid.h"
+#include "capsicum_superellipsoid_detector/clustering.h"
+#include "capsicum_superellipsoid_detector/conversions.h"
 
 namespace superellipsoid
 {
