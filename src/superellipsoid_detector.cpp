@@ -39,7 +39,6 @@ void SuperellipsoidDetector::startNode()
 
   // ROS Publishers (debugging/visualization purposes)
   m_superellipsoids_surface_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_surface", 2, true);
-  m_clusters_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("clusters", 2, true);
   m_centers_prior_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);
   m_centers_optimized_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_optimized", 2, true);
   m_surface_normals_marker_pub = m_priv_nh.advertise<visualization_msgs::MarkerArray>("surface_normals_marker", 2, true);
@@ -61,6 +60,13 @@ void SuperellipsoidDetector::startService()
 }
 
 void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
+{
+  processInput(pc2, m_config)
+}
+
+void SuperellipsoidDetector::processInput(const sensor_msgs::PointCloud2Ptr &pc2,
+                                          capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
+                                          std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> missing_surfaces)
 {
   double elapsed_total = 0;
   ROS_INFO("Pointcloud received...");
@@ -138,29 +144,19 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
   elapsed_total+=elapsed_optimization;
   // ----------------------------------------------------------------------------------------
   auto t_start_missing_surface = std::chrono::high_resolution_clock::now();
-  std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> missing_surfaces;
-  if (m_config.estimate_missing_surfaces)
+  if (config.estimate_missing_surfaces && missing_surfaces != nullptr)
   {
     for (const auto &se : converged_superellipsoids)
     {
-      missing_surfaces.push_back( se->estimateMissingSurfaces(m_config.missing_surfaces_threshold, m_config.missing_surfaces_num_samples) );
+      missing_surfaces.push_back( se->estimateMissingSurfaces(config.missing_surfaces_threshold, config.missing_surfaces_num_samples) );
     }
   }
 
   double elapsed_missing_surface = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start_missing_surface).count();
   elapsed_total+=elapsed_missing_surface;
+
   // ----------------------------------------------------------------------------------------
   auto t_start_ros_messages = std::chrono::high_resolution_clock::now();
- 
-  // debug: visualize clusters
-  if (m_clusters_pub.getNumSubscribers() > 0)
-  {
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr debug_pc = clustering::getColoredCloud(pc_pcl, cluster_indices);
-    sensor_msgs::PointCloud2::Ptr debug_pc_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*debug_pc, *debug_pc_ros);
-    debug_pc_ros->header = pc_pcl_tf_ros_header;
-    m_clusters_pub.publish(debug_pc_ros);
-  }
 
   // debug: publish superellipsoids for converged superellipsoids
   if (m_superellipsoids_pub.getNumSubscribers() > 0)
@@ -372,11 +368,6 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &pc2)
   ROS_INFO("(*) Missing Surface: %f ms", elapsed_missing_surface);
   ROS_INFO("(*) ROS Message Publish: %f ms", elapsed_ros_messages);
   ROS_WARN("====== Callback finished! =======");
-
-}
-
-void SuperellipsoidDetector::processInput(const sensor_msgs::PointCloud2Ptr &pc2)
-{
 
 }
 

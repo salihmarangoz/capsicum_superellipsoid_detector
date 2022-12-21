@@ -61,7 +61,6 @@ public:
     dynamic_reconfigure::Server<capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig> m_reconfigure_server;
     ros::Subscriber m_pc_sub;
     ros::Publisher m_superellipsoids_pub,
-        m_clusters_pub,
         m_centers_prior_pub,
         m_centers_optimized_pub,
         m_superellipsoids_surface_pub,

@@ -225,8 +225,6 @@ Note: Computation resources will only be used for subscribed topics.
 
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
   - Optimized superellipsoids output. Headers are the same for all superellipsoids.
-- **`~clusters`** ("sensor_msgs/PointCloud2")
-  - RGBXYZ pointcloud with each cluster has a different RGB color. Colors may be changed between messages for the same clusters. Recommended only for debugging.
 - **`~superellipsoids_surface`** ("sensor_msgs/PointCloud2")
   - XYZ pointcloud for the surface of superellipsoids.
 - **`~centers_prior`** ("sensor_msgs/PointCloud2")
