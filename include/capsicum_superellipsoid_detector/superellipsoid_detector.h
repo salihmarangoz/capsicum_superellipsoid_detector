@@ -55,7 +55,9 @@ public:
                                           std::vector<superellipsoid::Superellipsoid<pcl::PointXYZRGB>> &converged_superellipsoids,
                                           std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces);
                         
-    void pcCallback(const sensor_msgs::PointCloud2Ptr &pc2);
+    void subscriberCallback(const sensor_msgs::PointCloud2Ptr &pc2);
+    bool serviceCallbackSingle(capsicum_superellipsoid_detector::FitSuperellipsoidRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidResponse& res);
+    bool serviceCallbackMulti(capsicum_superellipsoid_detector::FitSuperellipsoidsRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidsResponse& res);
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
 
     bool is_started = false;
@@ -65,14 +67,16 @@ public:
     dynamic_reconfigure::Server<capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig> m_reconfigure_server;
     ros::Subscriber m_pc_sub;
     ros::Publisher m_superellipsoids_pub,
-        m_centers_prior_pub,
-        m_centers_optimized_pub,
-        m_superellipsoids_surface_pub,
-        m_superellipsoids_volume_pub,
-        m_surface_normals_marker_pub,
-        m_xyzlnormal_pub,
-        m_missing_surfaces_pub;
+                    m_centers_prior_pub,
+                    m_centers_optimized_pub,
+                    m_superellipsoids_surface_pub,
+                    m_superellipsoids_volume_pub,
+                    m_surface_normals_marker_pub,
+                    m_xyzlnormal_pub,
+                    m_missing_surfaces_pub;
     std::unique_ptr<tf::TransformListener> m_tf_listener;
+    ros::ServiceServer service_single,
+                        service_multi;
 };
 
 
