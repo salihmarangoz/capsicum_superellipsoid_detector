@@ -246,17 +246,53 @@ Note: Computation resources will only be used for subscribed topics.
 
 ### Services
 
+TODO: use `superellipsoid.h` for fitting a single superellipsoid. use the service for batch processing and object tracking. see c++ api section.
+
 TODO
 
 There are no services for the written node. But voxblox needs a `std_srvs/Empty` for publishing pointclouds of mapped plants which will be also triggering the computation of the superellipsoid detector node. Currently this task is assigned to `scripts/trigger_voxblox.py` which calls the related service in a fixed interval.
 
 
 
-FitSuperellipsoid
-
 FitSuperellipsoids
 
-ProcessSingleMessage
+trigger
+
+
+
+## C++ API
+
+For minimal use, only the template header `superellipsoid.h` with Ceres Solver, Boost, and PCL libraries are needed. A simple example without ROS dependencies would be like this:
+
+```c++
+// Load input points
+pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+/////// TODO: Fill in_cloud with points...
+
+// Filter Invalid Points
+std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
+pcl::removeNaNFromPointCloud(*in_cloud, *in_cloud, *indices);
+
+// Optimization
+superellipsoid::Superellipsoid<pcl::PointXYZ> se(in_cloud);
+se.estimateNormals(0.015);
+se.estimateClusterCenter(2.5);
+if (!se.fit(true, 100, RADIAL_EUCLIDIAN_DISTANCE))
+{
+  printf("Optimization diverged/failed!");
+}
+
+// Get optimized parameters
+std::map<std::string, double> optimized_parameters = se.getParameters();
+
+// Sample superellipsoid surface
+pcl::PointCloud<pcl::PointXYZ>::Ptr surface_cloud = se.sampleSurface();
+
+// Find missing surfaces
+pcl::PointCloud<pcl::PointXYZ>::Ptr missing_surface_cloud = se.estimateMissingSurfaces(0.015, 500);
+```
+
+For extra features like clustering, object tracking, etc. check the ROS node/service code as a reference.
 
 
 

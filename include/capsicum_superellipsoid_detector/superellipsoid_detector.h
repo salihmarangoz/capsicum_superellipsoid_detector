@@ -8,7 +8,6 @@
 #include <capsicum_superellipsoid_detector/SuperellipsoidDetectorConfig.h>
 
 // services
-#include <capsicum_superellipsoid_detector/FitSuperellipsoid.h>
 #include <capsicum_superellipsoid_detector/FitSuperellipsoids.h>
 #include <std_srvs/Empty.h>
 
@@ -56,8 +55,7 @@ public:
                                           std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces);
                         
     void subscriberCallback(const sensor_msgs::PointCloud2Ptr &pc2);
-    bool serviceCallbackSingle(capsicum_superellipsoid_detector::FitSuperellipsoidRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidResponse& res);
-    bool serviceCallbackMulti(capsicum_superellipsoid_detector::FitSuperellipsoidsRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidsResponse& res);
+    bool serviceCallback(capsicum_superellipsoid_detector::FitSuperellipsoidsRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidsResponse& res);
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
 
     bool is_started = false;
@@ -75,8 +73,9 @@ public:
                     m_xyzlnormal_pub,
                     m_missing_surfaces_pub;
     std::unique_ptr<tf::TransformListener> m_tf_listener;
-    ros::ServiceServer service_single,
-                        service_multi;
+    ros::ServiceServer fit_superellipsoids_service;
+    ros::ServiceServer trigger_service;
+    bool process_next = false;
 };
 
 

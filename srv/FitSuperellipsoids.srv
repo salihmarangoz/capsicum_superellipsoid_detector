@@ -4,11 +4,8 @@
 # A few outliers are within expectations.
 sensor_msgs/PointCloud2 in_cloud
 
-# Optional. Predicts the missing surfaces after the superellipsoid optimization task. 
-bool enable_find_missing_surfaces
-
-# Optional.
-bool enable_find_outliers
+bool return_missing_surfaces # Optional. Predicts the missing surfaces after the superellipsoid optimization task. 
+bool return_outliers # Optional.
 
 # Optional. Overrides config for a single service call. Check the example contents with 'rostopic echo -n1 /superellipsoid_detector_node/parameter_updates'
 dynamic_reconfigure/Config config_override 
@@ -17,8 +14,8 @@ dynamic_reconfigure/Config config_override
 
 superellipsoid_msgs/Superellipsoid[] results
 
-# Possibly non-empty if enable_find_missing_surfaces set to true
+# Possibly non-empty if return_missing_surfaces set to true
 sensor_msgs/PointCloud2[] missing_surfaces
 
-# Possibly non-empty if enable_find_outliers set to true
+# Possibly non-empty if return_outliers set to true
 sensor_msgs/PointCloud2 outliers

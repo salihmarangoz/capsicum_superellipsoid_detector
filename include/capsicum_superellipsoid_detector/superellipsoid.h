@@ -214,10 +214,9 @@ double Superellipsoid<PointT>::s_func(double w, double m) {return SIGNUM(sin(w))
 template <typename PointT>
 pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius, bool flip_normal_towards_centerpoint)
 {
-  // TODO
   if (pcl::traits::has_normal_v<PointT>)
   {
-    ROS_WARN("TODO: Input pointcloud already contains normal values but this function overwrites these previous values.");
+    // TODO: use input normals instead.
   }
 
   pcl::NormalEstimation<PointT, pcl::Normal> ne;

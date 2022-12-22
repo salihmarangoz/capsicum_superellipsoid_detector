@@ -79,7 +79,6 @@ add_definitions(${PCL_DEFINITIONS})
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  FitSuperellipsoid.srv
   FitSuperellipsoids.srv
 )
 
