@@ -50,7 +50,10 @@ public:
     ~SuperellipsoidDetector();
     void startNode();
     void startService();
-    void processInput(const sensor_msgs::PointCloud2Ptr &pc2);
+    void processInput(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
+                        const sensor_msgs::PointCloud2::ConstPtr &pc2,
+                        std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces);
+                        
     void pcCallback(const sensor_msgs::PointCloud2Ptr &pc2);
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
 

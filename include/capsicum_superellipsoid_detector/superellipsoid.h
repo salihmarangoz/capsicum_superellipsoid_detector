@@ -133,7 +133,7 @@ template <typename T> bool SuperellipsoidError::operator()(const T* const parame
 }
 
 //////////////////////////////////////////////////////////////////
-//////// SUPERELLIPSOID CLASS ////////////////////////////////////
+//////// SUPERELLIPSOID DECLERATION //////////////////////////////
 //////////////////////////////////////////////////////////////////
 
 template <typename PointT>
@@ -170,10 +170,38 @@ template <typename PointT>
 Superellipsoid<PointT>::Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_input)
 {
   cloud_in = cloud_input;
-  normals_in = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
+  normals_in = pcl::make_shared<pcl::PointCloud<pcl::Normal>>();
   parameters_ptr = std::make_shared<std::vector<double>>();
 }
 
+//////////////////////////////////////////////////////////////////
+//////// SUPERELLIPSOID CAPSULATED TYPES /////////////////////////
+//////////////////////////////////////////////////////////////////
+
+// Superellipsoid -> encapsulated by a pointer
+template <typename PointT>
+using SuperellipsoidPtr = std::shared_ptr<Superellipsoid<PointT>>;
+
+// Superellipsoid -> inside a vector
+template <typename PointT>
+using SuperellipsoidArray = std::vector<Superellipsoid<PointT>>;
+
+// Superellipsoid -> inside a vector -> encapsulated by a pointer
+template <typename PointT>
+using SuperellipsoidArrayPtr = std::shared_ptr<SuperellipsoidArray<PointT>>;
+
+// Superellipsoid -> encapsulated by a pointer -> inside a vector
+//template <typename PointT>
+//using SuperellipsoidPtrArray = std::vector<SuperellipsoidPtr<PointT>>;
+
+// Superellipsoid -> encapsulated by a pointer -> inside a vector -> encapsulated by a pointer
+//template <typename PointT>
+//using SuperellipsoidPtrArrayPtr = std::shared_ptr<SuperellipsoidPtrArray<PointT>>;
+
+
+//////////////////////////////////////////////////////////////////
+//////// SUPERELLIPSOID DEFINITION ///////////////////////////////
+//////////////////////////////////////////////////////////////////
 
 template <typename PointT>
 double Superellipsoid<PointT>::c_func(double w, double m) {return SIGNUM(cos(w)) * pow(abs(cos(w)), m);}
@@ -186,6 +214,12 @@ double Superellipsoid<PointT>::s_func(double w, double m) {return SIGNUM(sin(w))
 template <typename PointT>
 pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius, bool flip_normal_towards_centerpoint)
 {
+  // TODO
+  if (pcl::traits::has_normal_v<PointT>)
+  {
+    ROS_WARN("TODO: Input pointcloud already contains normal values but this function overwrites these previous values.");
+  }
+
   pcl::NormalEstimation<PointT, pcl::Normal> ne;
   typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT> ());
   ne.setSearchMethod(tree);
@@ -269,7 +303,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, Cos
   parameters_ptr->resize(16);
   auto parameters = (*parameters_ptr).data();
 
-  auto priors_ptr = boost::make_shared<std::vector<double>>();
+  auto priors_ptr = std::make_shared<std::vector<double>>();
   priors_ptr->resize(16);
   auto priors = (*priors_ptr).data();
 

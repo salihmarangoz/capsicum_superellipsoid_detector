@@ -3,14 +3,30 @@
 
 #include <capsicum_superellipsoid_detector/superellipsoid.h>
 #include <superellipsoid_msgs/Superellipsoid.h>
+#include <superellipsoid_msgs/SuperellipsoidArray.h>
+
+namespace superellipsoid_msgs
+{
+//////////////////////////////////////////////////////////////////
+//////// SUPERELLIPSOID CAPSULATED TYPES /////////////////////////
+//////////////////////////////////////////////////////////////////
+
+// Superellipsoid -> encapsulated by a pointer
+using SuperellipsoidPtr = boost::shared_ptr<Superellipsoid>;
+
+// Superellipsoid -> inside a vector -> encapsulated by a pointer
+using SuperellipsoidArrayPtr = boost::shared_ptr<SuperellipsoidArray>;
+
+} // namespace superellipsoid_msgs
+
 
 namespace superellipsoid
 {
 
 template <typename PointT>
-Superellipsoid<PointT> fromROSMsg(const superellipsoid_msgs::Superellipsoid &se_msg)
+superellipsoid::Superellipsoid<PointT> fromROSMsg(const superellipsoid_msgs::Superellipsoid &se_msg)
 {
-  Superellipsoid<PointT> se;
+  superellipsoid::Superellipsoid<PointT> se;
   (*(se.parameters_ptr))[0] = se_msg.a;
   (*(se.parameters_ptr))[1] = se_msg.b;
   (*(se.parameters_ptr))[2] = se_msg.c;
@@ -26,7 +42,21 @@ Superellipsoid<PointT> fromROSMsg(const superellipsoid_msgs::Superellipsoid &se_
 }
 
 template <typename PointT>
-superellipsoid_msgs::Superellipsoid toROSMsg(const Superellipsoid<PointT> &se)
+superellipsoid::SuperellipsoidArray<PointT> fromROSMsg(const superellipsoid_msgs::SuperellipsoidArray &se_msg)
+{
+  superellipsoid::SuperellipsoidArray<PointT> arr;
+
+  for (int i=0; i<se_msg.superellipsoids.size(); i++)
+  {
+    superellipsoid::Superellipsoid<PointT> se = fromROSMsg<PointT>(se_msg.superellipsoids[i]);
+    arr.push_back(se);
+  }
+
+  return arr;
+}
+
+template <typename PointT>
+superellipsoid_msgs::Superellipsoid toROSMsg(const superellipsoid::Superellipsoid<PointT> &se, const std_msgs::Header &header)
 {
   superellipsoid_msgs::Superellipsoid se_msg;
   se_msg.a = (*(se.parameters_ptr))[0];
@@ -41,26 +71,44 @@ superellipsoid_msgs::Superellipsoid toROSMsg(const Superellipsoid<PointT> &se)
   se_msg.pitch = (*(se.parameters_ptr))[9];
   se_msg.yaw = (*(se.parameters_ptr))[10];
   se_msg.volume = se.computeVolume();
+  se_msg.header = header;
   return se_msg;
 }
 
-/*
-template<typename PointT>
-std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> separateCloudByIndices(const typename pcl::PointCloud<PointT>::ConstPtr &input_cloud, const pcl::IndicesConstPtr &indices)
+template <typename PointT>
+superellipsoid_msgs::SuperellipsoidArray toROSMsg(const superellipsoid::SuperellipsoidArray<PointT> &se, const std_msgs::Header &header)
 {
-  typename pcl::PointCloud<PointT>::Ptr inlier_cloud(new pcl::PointCloud<PointT>), outlier_cloud(new pcl::PointCloud<PointT>);
-  inlier_cloud->header = input_cloud->header;
-  outlier_cloud->header = input_cloud->header;
-  pcl::ExtractIndices<PointT> extract;
-  extract.setInputCloud(input_cloud);
-  extract.setIndices(indices);
-  extract.setNegative(false);
-  extract.filter(*inlier_cloud);
-  extract.setNegative(true);
-  extract.filter(*outlier_cloud);
-  return std::make_pair(inlier_cloud, outlier_cloud);
+  superellipsoid_msgs::SuperellipsoidArray se_msg_arr;
+
+  se_msg_arr.superellipsoids.reserve(se.size());
+  for (int i=0; i<se.size(); i++)
+  {
+    superellipsoid_msgs::Superellipsoid se_msg = toROSMsg(se[i], header);
+    se_msg_arr.superellipsoids.push_back(se_msg);
+  }
+
+  se_msg_arr.header = header;
+  return se_msg_arr;
 }
-*/
+
+//extra:
+template <typename PointT>
+superellipsoid_msgs::SuperellipsoidArray toROSMsg(const std::vector<superellipsoid_msgs::Superellipsoid> &se_msg_vec, const std_msgs::Header &header, bool overwrite_headers=false)
+{
+  superellipsoid_msgs::SuperellipsoidArray se_msg_arr;
+  se_msg_arr.superellipsoids = se_msg_vec; // copy all superellipsoids
+  se_msg_arr.header = header;
+
+  if (overwrite_headers)
+  {
+    for (int i=0; i<se_msg_arr.superellipsoids.size(); i++)
+    {
+      se_msg_arr.superellipsoids[i].header = header;
+    }
+  }
+
+  return se_msg_arr;
+}
 
 } // namespace superellipsoid
 #endif // __SUPERELLIPSOID_ROS_CONVERSION_H__
