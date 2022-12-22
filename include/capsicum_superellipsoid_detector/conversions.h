@@ -17,11 +17,6 @@ using SuperellipsoidPtr = boost::shared_ptr<Superellipsoid>;
 // Superellipsoid -> inside a vector -> encapsulated by a pointer
 using SuperellipsoidArrayPtr = boost::shared_ptr<SuperellipsoidArray>;
 
-} // namespace superellipsoid_msgs
-
-
-namespace superellipsoid
-{
 
 template <typename PointT>
 superellipsoid::Superellipsoid<PointT> fromROSMsg(const superellipsoid_msgs::Superellipsoid &se_msg)
@@ -110,5 +105,5 @@ superellipsoid_msgs::SuperellipsoidArray toROSMsg(const std::vector<superellipso
   return se_msg_arr;
 }
 
-} // namespace superellipsoid
+} // namespace superellipsoid_msgs
 #endif // __SUPERELLIPSOID_ROS_CONVERSION_H__
