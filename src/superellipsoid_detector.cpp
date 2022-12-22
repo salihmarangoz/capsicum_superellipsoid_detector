@@ -56,6 +56,9 @@ void SuperellipsoidDetector::startService()
     ROS_ERROR("Node or service is already started. Only one can be started in a single process.");
   }
   is_started = true;
+
+  //bool add(roscpp_tutorials::TwoInts::Request& req,
+  //         roscpp_tutorials::TwoInts::Response& res);
 }
 
 
@@ -73,9 +76,11 @@ void SuperellipsoidDetector::pcCallback(const sensor_msgs::PointCloud2Ptr &input
   std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> missing_surfaces_rosmsgs;
   if (m_missing_surfaces_pub.getNumSubscribers()>0) missing_surfaces_rosmsgs.reset(new std::vector<sensor_msgs::PointCloud2::Ptr>);
   
+  // Process input pointcloud
   processInput(m_config, input_pc2, converged_superellipsoids, missing_surfaces_rosmsgs);
 
-
+  // Visualize missing surfaces
+  // Normal vectors should be directed toward optimized centroid. They are not real surface normals!
   if (missing_surfaces_rosmsgs != nullptr)
   {
     pcl::PointCloud<pcl::PointXYZLNormal>::Ptr missing_pc_pcl(new pcl::PointCloud<pcl::PointXYZLNormal>);
@@ -158,10 +163,9 @@ void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::Supe
   // TODO: CHECK IF FRUIT SIZE MAKES SENSE. OTHERWISE SPLIT OR DISCARD
 
   // Initialize superellipsoids
-  std::vector<std::shared_ptr<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>> found_superellipsoids;
-  for (const auto& current_c : clusters)
-  {
-    found_superellipsoids.push_back( std::make_shared<superellipsoid::Superellipsoid<pcl::PointXYZRGB>>(current_c) );
+  for (auto& current_c : clusters)
+  { // note: these are not converged for now and diverged superellipsoids will be removed later.
+    converged_superellipsoids.push_back( superellipsoid::Superellipsoid<pcl::PointXYZRGB>(current_c) );
   }
 
   double elapsed_clustering = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start_clustering).count();
@@ -170,22 +174,25 @@ void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::Supe
   auto t_start_optimization = std::chrono::high_resolution_clock::now();
 
   // Estimate surface normals and use it for estimating fruit centers
-  for (const auto& current_se : found_superellipsoids)
+  for (auto& current_se : converged_superellipsoids)
   {
-    current_se->estimateNormals(m_config.estimate_normals_search_radius); // search_radius
-    current_se->estimateClusterCenter(m_config.estimate_cluster_center_regularization); // regularization
+    current_se.estimateNormals(m_config.estimate_normals_search_radius); // search_radius
+    current_se.estimateClusterCenter(m_config.estimate_cluster_center_regularization); // regularization
   }
 
   // Optimize Superellipsoids
+  // TODO: As an alternative to the solution with shared_ptr, removing diverged superellipsoid from a vector has linear complexity
+  //       This may be faster solution compared to copying superellipsoid objects.
+  //       Or, optimization and clustering sections can be merged.
+  //       This shouldn't be a problem in the future but I will fix it, maybe.
   int fail_counter = 0;
-  for (const auto &current_superellipsoid : found_superellipsoids)
-  {
-    if ( current_superellipsoid->fit(m_config.print_ceres_summary, m_config.max_num_iterations, (superellipsoid::CostFunctionType)(m_config.cost_type)) )
-    {
-      converged_superellipsoids->push_back(current_superellipsoid);
-    }
-    else
-    {
+  for (auto it = converged_superellipsoids.begin(); it != converged_superellipsoids.end(); ) { 
+    if ( it->fit(m_config.print_ceres_summary, m_config.max_num_iterations, (superellipsoid::CostFunctionType)(m_config.cost_type))) { 
+      ++it;
+    } 
+    else 
+    { 
+      it = converged_superellipsoids.erase(it);
       fail_counter++;
     }
   }
@@ -202,9 +209,9 @@ void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::Supe
 
   if (missing_surfaces != nullptr)
   {
-    for (const auto &se : converged_superellipsoids)
+    for (auto &se : converged_superellipsoids)
     {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se->estimateMissingSurfaces(config.missing_surfaces_threshold, config.missing_surfaces_num_samples)
+      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se.estimateMissingSurfaces(config.missing_surfaces_threshold, config.missing_surfaces_num_samples);
       sensor_msgs::PointCloud2::Ptr ms_ros(new sensor_msgs::PointCloud2);
       pcl::toROSMsg(*ms_pcl, *ms_ros);
       ms_ros->header = pc_pcl_tf_ros_header;
