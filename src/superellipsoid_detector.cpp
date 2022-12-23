@@ -47,7 +47,8 @@ void SuperellipsoidDetector::startNode()
 
   // ROS Subscribers
   m_pc_sub = m_nh.subscribe("pc_in", 1, &SuperellipsoidDetector::subscriberCallback, this); // queue size: 2 for throughput, 1 for low latency
-
+  
+  // ROS Service
   trigger_service = m_nh.advertiseService("trigger", &SuperellipsoidDetector::triggerCallback, this);
   
 }
@@ -65,68 +66,14 @@ void SuperellipsoidDetector::startService()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////// SERVICE CALLBACK (SINGLE) /////////////////////////////////////////////////////////////////////////
-////// A simple reference use of Superellipsoid class ///////////////////////////////////////////////////////////
+///////////// TRIGGER CALLBACK //////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: TO README
-/*
-bool SuperellipsoidDetector::serviceCallbackSingle(capsicum_superellipsoid_detector::FitSuperellipsoidRequest& req,
-                                                    capsicum_superellipsoid_detector::FitSuperellipsoidResponse& res)
-{
-  ROS_INFO("Request (for single superellipsoid) received...");
-  auto t_start = std::chrono::high_resolution_clock::now();
 
-  // Config override
-  capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig config = m_config;
-  config.__fromMessage__(req.config_override); // TODO: is there any better way to do it?
-
-  // Convert to PCL Pointcloud
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::fromROSMsg(req.in_cloud, *pc_pcl);
-
-  // Filter Invalid Points
-  std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
-  pcl::removeNaNFromPointCloud(*pc_pcl, *pc_pcl, *indices);
-
-  if (pc_pcl->size() < config.min_cluster_size)
-  {
-    ROS_WARN("Number of points (%lu) is smaller than min_cluster_size (%d). Aborting...", pc_pcl->size(), config.min_cluster_size);
-    return false;
-  }
-
-  // Optimization
-  superellipsoid::Superellipsoid<pcl::PointXYZRGB> superellipsoid(pc_pcl);
-  superellipsoid.estimateNormals(config.estimate_normals_search_radius); // search_radius
-  superellipsoid.estimateClusterCenter(config.estimate_cluster_center_regularization); // regularization
-  if (!superellipsoid.fit(config.print_ceres_summary, config.max_num_iterations, (superellipsoid::CostFunctionType)(config.cost_type)))
-  {
-    ROS_ERROR("Optimization diverged/failed!");
-    return false;
-  }
-  res.result = superellipsoid_msgs::toROSMsg(superellipsoid, req.in_cloud.header);
-
-  // Find missing surfaces. Optional
-  if (req.enable_find_missing_surfaces)
-  {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = superellipsoid.estimateMissingSurfaces(config.missing_surfaces_threshold, config.missing_surfaces_num_samples);
-      sensor_msgs::PointCloud2 ms_ros;
-      pcl::toROSMsg(*ms_pcl, ms_ros);
-      ms_ros.header = req.in_cloud.header;
-      res.missing_surfaces = ms_ros;
-  }
-
-  double elapsed_time = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start).count();
-  ROS_INFO("Total Elapsed Time: %f ms", elapsed_time);
-  ROS_WARN("====== Callback finished! =======");
-  return true;
-}
-*/
-
-bool SuperellipsoidDetector::serviceCallback(std_srvs::EmptyRequest& req,
-                                             std_srvs::EmptyResponse& res)
+bool SuperellipsoidDetector::triggerCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res)
 {
   ROS_DEBUG("Triggered capsicum_superellipsoid_detector!");
-  process_next = true;
+  is_triggered = true;
+  if (m_config.processing_mode != 1 /* ON_REQUEST */) ROS_WARN_THROTTLE(10.0, "The processing mode is CONTINUOUS. Triggering the node have no effect.");
   return true;
 }
 
@@ -134,8 +81,7 @@ bool SuperellipsoidDetector::serviceCallback(std_srvs::EmptyRequest& req,
 ///////////// SERVICE CALLBACK //////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool SuperellipsoidDetector::serviceCallback(capsicum_superellipsoid_detector::FitSuperellipsoidsRequest& req,
-                                             capsicum_superellipsoid_detector::FitSuperellipsoidsResponse& res)
+bool SuperellipsoidDetector::serviceCallback(capsicum_superellipsoid_detector::FitSuperellipsoidsRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidsResponse& res)
 {
   ROS_INFO("Request (for multiple superellipsoids) received...");
 
@@ -152,23 +98,21 @@ bool SuperellipsoidDetector::serviceCallback(capsicum_superellipsoid_detector::F
 void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Ptr &input_pc2)
 {
   // Check processing mode
-  if (m_config.processing_mode == 1 /* ON_REQUEST */ && !process_next) 
+  if (m_config.processing_mode == 1 /* ON_REQUEST */ && !is_triggered) 
   {
     ROS_DEBUG("Skipped a message!");
     return;
   }
-  process_next = false;
+  is_triggered = false;
 
-  // Mandatory
-  superellipsoid::SuperellipsoidArray<pcl::PointXYZRGB> converged_superellipsoids;
-  std_msgs::Header new_header;
-
-  // Optional
+  // Optional Requests
   std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> missing_surfaces_rosmsgs;
   if (m_missing_surfaces_pub.getNumSubscribers()>0) missing_surfaces_rosmsgs.reset(new std::vector<sensor_msgs::PointCloud2::Ptr>);
   
   // Process input pointcloud
-  processInput(m_config, input_pc2, converged_superellipsoids, missing_surfaces_rosmsgs);
+  std_msgs::Header new_header;
+  superellipsoid::SuperellipsoidArray<pcl::PointXYZRGB> converged_superellipsoids;
+  processInput(m_config, input_pc2, new_header, converged_superellipsoids, missing_surfaces_rosmsgs);
 
   // Visualize missing surfaces
   // Normal vectors should be directed toward optimized centroid. They are not real surface normals!
@@ -217,9 +161,9 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
 
 void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
                                           const sensor_msgs::PointCloud2::ConstPtr &pc2,
+                                          std_msgs::Header &new_header,
                                           std::vector<superellipsoid::Superellipsoid<pcl::PointXYZRGB>> &converged_superellipsoids,
-                                          std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces,
-                                          std_msgs::Header &new_header
+                                          std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces
                                           )
 {
   auto t_start = std::chrono::high_resolution_clock::now();
@@ -241,7 +185,7 @@ void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::Supe
 
   // Transform pointcloud to the world frame
   pcl_ros::transformPointCloud(config.world_frame, *pc_pcl, *pc_pcl, *m_tf_listener);
-  std_msgs::Header new_header = pcl_conversions::fromPCL(pc_pcl->header); // <-------- use this header for output messages!
+  new_header = pcl_conversions::fromPCL(pc_pcl->header); // <-------- use this header for output messages!
 
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices;

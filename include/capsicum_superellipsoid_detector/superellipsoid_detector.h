@@ -51,14 +51,18 @@ public:
     void startService();
     void processInput(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
                                           const sensor_msgs::PointCloud2::ConstPtr &pc2,
+                                          std_msgs::Header &new_header,
                                           std::vector<superellipsoid::Superellipsoid<pcl::PointXYZRGB>> &converged_superellipsoids,
                                           std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces);
                         
     void subscriberCallback(const sensor_msgs::PointCloud2Ptr &pc2);
     bool serviceCallback(capsicum_superellipsoid_detector::FitSuperellipsoidsRequest& req, capsicum_superellipsoid_detector::FitSuperellipsoidsResponse& res);
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
+    bool triggerCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
 
     bool is_started = false;
+    bool is_triggered = false;
+
     ros::NodeHandle &m_nh;
     ros::NodeHandle &m_priv_nh;
     capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig m_config;
@@ -75,7 +79,7 @@ public:
     std::unique_ptr<tf::TransformListener> m_tf_listener;
     ros::ServiceServer fit_superellipsoids_service;
     ros::ServiceServer trigger_service;
-    bool process_next = false;
+    
 };
 
 
