@@ -46,10 +46,10 @@ void SuperellipsoidDetector::startNode()
   m_superellipsoids_volume_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_volume", 2, true);
 
   // ROS Subscribers
-  m_pc_sub = m_nh.subscribe("pc_in", 1, &SuperellipsoidDetector::subscriberCallback, this); // queue size: 2 for throughput, 1 for low latency
+  m_pc_sub = m_priv_nh.subscribe("pc_in", 1, &SuperellipsoidDetector::subscriberCallback, this); // queue size: 2 for throughput, 1 for low latency
   
   // ROS Service
-  trigger_service = m_nh.advertiseService("trigger", &SuperellipsoidDetector::triggerCallback, this);
+  trigger_service = m_priv_nh.advertiseService("trigger", &SuperellipsoidDetector::triggerCallback, this);
   
 }
 
