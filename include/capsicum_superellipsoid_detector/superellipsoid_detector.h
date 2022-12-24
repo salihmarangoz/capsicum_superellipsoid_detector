@@ -60,8 +60,9 @@ public:
     void configCallback(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config, uint32_t level);
     bool triggerCallback(std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& res);
 
-    bool is_started = false;
-    bool is_triggered = false;
+    bool m_is_started = false;
+    bool m_is_triggered = false;
+    uint32_t m_seq = 0;
 
     ros::NodeHandle &m_nh;
     ros::NodeHandle &m_priv_nh;
@@ -77,9 +78,8 @@ public:
                     m_xyzlnormal_pub,
                     m_missing_surfaces_pub;
     std::unique_ptr<tf::TransformListener> m_tf_listener;
-    ros::ServiceServer fit_superellipsoids_service;
-    ros::ServiceServer trigger_service;
-    
+    ros::ServiceServer m_fit_superellipsoids_service;
+    ros::ServiceServer m_trigger_service;
 };
 
 

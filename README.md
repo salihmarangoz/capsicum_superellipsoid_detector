@@ -112,7 +112,12 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
 
 ## ROS Topics, Transforms, and Services
 
-### Parameters
+Two executables described below are available for ROS. Single or both can be run depending on the needs. Parameters are mostly shared between two executables.
+
+- **`superellipsoid_detector_node`**: For processing a stream of pointclouds.
+- **`superellipsoid_detector_service`**: For processing a single service request (remote procedure call). (No publisher/subscriber is initialized, except TF)
+
+### Common Parameters
 
 - **`cost_type`** **: 2**
 
@@ -205,13 +210,7 @@ $ roslaunch capsicum_superellipsoid_detector start_real.launch # for real world
   - World transform frame.
   - TODO: will be used for object tracking
 
-### Subscribed Topics
-
-**`~pc_in`** ("sensor_msgs/PointCloud2")
-
-- RGBXYZ pointcloud as the input (e.g. voxblox output can be used as the input). Currently RGB information is not used. Some modifications may be needed to feed XYZ only pointcloud.
-
-### Published Topics
+### Node-Only Parameters
 
 TODO: processing_mode
 
@@ -221,7 +220,21 @@ TODO: orientation_threshold
 
 TODO: estimate_missing_surfaces
 
-Note: Computation resources will only be used for subscribed topics.
+### Service-Only Parameters
+
+None.
+
+### Subscribed Topics
+
+Note: Available only for the node.
+
+**`~pc_in`** ("sensor_msgs/PointCloud2")
+
+- RGBXYZ pointcloud as the input (e.g. voxblox output can be used as the input). Currently RGB information is not used. Some modifications may be needed to feed XYZ only pointcloud.
+
+### Published Topics
+
+Note: Available only for the node. Also, computation resources will only be used for subscribed topics.
 
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
   - Optimized superellipsoids output. Headers are the same for all superellipsoids.
@@ -231,34 +244,25 @@ Note: Computation resources will only be used for subscribed topics.
   - XYZ pointcloud for predicted centers via only using surface normals. Recommended only for debugging.
 - **`~centers_optimized`** ("sensor_msgs/PointCloud2")
   - XYZ pointcloud for centers computed after the superellipsoid optimization. Centers for failed optimizations will not be published. Recommended only for debugging.
-- **`~superellipsoids_volume`** ("sensor_msgs/PointCloud2")
-  - XYZ pointcloud for the volume of superellipsoids. The volume is sampled uniform with a fixed resolution and then all points are transformed to the real position. 
-- **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
-  - Arrow markers for visualizing surface normals. Surface normals are computed w.r.t. predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
-- **`~xyz_label_normal`** ("sensor_msgs/PointCloud2")
-  - XYZLNormal pointcloud for all clustered points. Labels are indicating cluster indexes and normals are computed w.r.t. predicted cluster center. 
+- **`~pc_preprocessed`** ("sensor_msgs/PointCloud2")
+  - TODO
+  - XYZLNormal pointcloud for all clustered points. Labels are indicating cluster indexes. Normals don't represent the surface normal, instead the normals are computed w.r.t. predicted cluster center. 
 - **`~missing_surfaces`** ("sensor_msgs/PointCloud2")
-  - XYZLNormal pointcloud representing (estimated) missing data points on an superellipsoid. Labels are indicating cluster indexes and normals are directed towards the optimized center. 
+  - XYZL pointcloud representing (estimated) missing data points on an superellipsoid. Labels are indicating object id.
+- **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
+  - Use only for debugging. Arrow markers for visualizing surface normals. Surface normals are computed w.r.t. predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
 
 ### Transforms
 
-- `world` -> Input Pointcloud Frame
+- `world` -> Pointcloud Frame
 
 ### Services
 
-TODO: use `superellipsoid.h` for fitting a single superellipsoid. use the service for batch processing and object tracking. see c++ api section.
+- **`~trigger`** ("std_srvs/Empty")
+  - Triggers the node to process next input if `processing_mode` parameter is set to `ON_REQUEST`.
 
-TODO
-
-There are no services for the written node. But voxblox needs a `std_srvs/Empty` for publishing pointclouds of mapped plants which will be also triggering the computation of the superellipsoid detector node. Currently this task is assigned to `scripts/trigger_voxblox.py` which calls the related service in a fixed interval.
-
-
-
-FitSuperellipsoids
-
-trigger
-
-
+- **`/fit_superellipsoids`** (["capsicum_superellipsoid_detector/FitSuperellipsoids"](srv/FitSuperellipsoids.srv))
+  - Only available with the service executable (`superellipsoid_detector_service`).
 
 ## C++ API
 
@@ -316,7 +320,6 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 ## TODO:
 
 - [ ] simplify readme
-- [ ] add object tracking
 - [ ] optional dependencies as much as possible
 - [ ] fix ros service, maybe add ros messages
 - [ ] update the comments in superellipsoid msgs

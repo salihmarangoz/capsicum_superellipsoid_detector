@@ -105,5 +105,9 @@ superellipsoid_msgs::SuperellipsoidArray toROSMsg(const std::vector<superellipso
   return se_msg_arr;
 }
 
+//TODO: TF2 export
+
+
+
 } // namespace superellipsoid_msgs
 #endif // __SUPERELLIPSOID_ROS_CONVERSION_H__

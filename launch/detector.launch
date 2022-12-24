@@ -2,7 +2,10 @@
 <launch>
 
   <node name="superellipsoid_detector_node" pkg="capsicum_superellipsoid_detector" type="superellipsoid_detector_node" output="screen" clear_params="true">
-    <remap from="pc_in" to="/voxblox_node/surface_pointcloud"/>
+    <remap from="~pc_in" to="/voxblox_node/surface_pointcloud"/>
+  </node>
+
+  <node name="superellipsoid_detector_service" pkg="capsicum_superellipsoid_detector" type="superellipsoid_detector_service" output="screen" clear_params="true">
   </node>
 
 </launch>

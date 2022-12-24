@@ -1,6 +1,7 @@
 #ifndef SUPERELLIPSOID_H
 #define SUPERELLIPSOID_H
 
+#include <cmath>
 #include <memory>
 #include <vector>
 #include <string>
@@ -12,12 +13,14 @@
 #include <boost/math/special_functions/beta.hpp>
 #include <boost/math/special_functions/sign.hpp>
 
-#ifndef SIGNUM
-#define SIGNUM(x) ((x)>0?+1.:-1.)
-#endif
-
 namespace superellipsoid
 {
+
+using ceres::AutoDiffCostFunction;
+using ceres::CostFunction;
+using ceres::Problem;
+using ceres::Solve;
+using ceres::Solver;
 
 enum CostFunctionType{
   NAIVE=0,
@@ -26,12 +29,6 @@ enum CostFunctionType{
   SOLINA=3,
   SOLINA_DISTANCE=4
 };
-
-using ceres::AutoDiffCostFunction;
-using ceres::CostFunction;
-using ceres::Problem;
-using ceres::Solve;
-using ceres::Solver;
 
 //////////////////////////////////////////////////////////////////
 //////// SUPERELLIPSOID ERROR ////////////////////////////////////
@@ -140,20 +137,21 @@ template <typename PointT>
 class Superellipsoid
 {
 public:
+  // TODO: set const better!
+  // TODO: constructor without cloud_in
   Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_in);
-  pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius, bool flip_normal_towards_centerpoint=true);
-  pcl::PointXYZ estimateClusterCenter(float regularization);
-  pcl::PointXYZ getEstimatedCenter();
-  typename pcl::PointCloud<PointT>::Ptr getCloud();
-  pcl::PointCloud<pcl::Normal>::Ptr getNormals();
+  pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius);
+  pcl::PointXYZ estimateClusterCenter(float regularization, bool flip_normals_towards_estimated_center=true);
+  const typename pcl::PointCloud<PointT>::Ptr getCloud() const;
+  const pcl::PointCloud<pcl::Normal>::Ptr getNormals() const;
   bool fit(bool log_to_stdout=true, int max_num_iterations=100, CostFunctionType cost_type=CostFunctionType::RADIAL_EUCLIDIAN_DISTANCE, double prior_center=0.1, double prior_scaling=0.1);
   pcl::PointCloud<pcl::PointXYZ>::Ptr estimateMissingSurfaces(double distance_threshold=0.01, int num_samples=1000);
-  //--------------- TODO
   pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples=1000) const;
   pcl::PointCloud<pcl::PointXYZ>::Ptr _sampleSurfaceParametricDefinition(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, double u_res=0.05, double v_res=0.05) const;
   pcl::PointCloud<pcl::PointXYZ>::Ptr sampleSurface(bool use_fibonacci_projection=false, bool apply_transformation=true, int num_samples_fibonacci=1000, double u_res_parametric=0.05, double v_res_parametric=0.05) const;
   pcl::PointCloud<pcl::PointXYZ>::Ptr sampleVolume(double resolution, bool apply_transformation=true) const;
   pcl::PointXYZ getOptimizedCenter() const;
+  pcl::PointXYZ getEstimatedCenter() const;
   double computeVolume() const;
   std::map<std::string, double> getParameters() const;
   static double c_func(double w, double m);
@@ -190,33 +188,26 @@ using SuperellipsoidArray = std::vector<Superellipsoid<PointT>>;
 template <typename PointT>
 using SuperellipsoidArrayPtr = std::shared_ptr<SuperellipsoidArray<PointT>>;
 
-// Superellipsoid -> encapsulated by a pointer -> inside a vector
-//template <typename PointT>
-//using SuperellipsoidPtrArray = std::vector<SuperellipsoidPtr<PointT>>;
-
-// Superellipsoid -> encapsulated by a pointer -> inside a vector -> encapsulated by a pointer
-//template <typename PointT>
-//using SuperellipsoidPtrArrayPtr = std::shared_ptr<SuperellipsoidPtrArray<PointT>>;
-
 
 //////////////////////////////////////////////////////////////////
 //////// SUPERELLIPSOID DEFINITION ///////////////////////////////
 //////////////////////////////////////////////////////////////////
 
 template <typename PointT>
-double Superellipsoid<PointT>::c_func(double w, double m) {return SIGNUM(cos(w)) * pow(abs(cos(w)), m);}
+double Superellipsoid<PointT>::c_func(double w, double m) {return std::copysign(pow(abs(cos(w)), m) , cos(w));}
 
 
 template <typename PointT>
-double Superellipsoid<PointT>::s_func(double w, double m) {return SIGNUM(sin(w)) * pow(abs(sin(w)), m);}
+double Superellipsoid<PointT>::s_func(double w, double m) {return std::copysign(pow(abs(sin(w)), m) , sin(w));}
 
 
 template <typename PointT>
-pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius, bool flip_normal_towards_centerpoint)
+pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float search_radius)
 {
   if (pcl::traits::has_normal_v<PointT>)
   {
-    // TODO: use input normals instead.
+    printf("Using given normals is not implemented yet. Estimating normals...\n");
+    // TODO: use input normals instead if available
   }
 
   pcl::NormalEstimation<PointT, pcl::Normal> ne;
@@ -227,26 +218,12 @@ pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::estimateNormals(float 
   normals_in->points.reserve(cloud_in->points.size());
   ne.compute (*normals_in);
 
-  if (flip_normal_towards_centerpoint)
-  {
-    for (size_t i = 0; i < normals_in->size(); i++)
-    {
-      pcl::flipNormalTowardsViewpoint(cloud_in->points.at(i),
-                                      estimated_center.x,
-                                      estimated_center.y,
-                                      estimated_center.z,
-                                      normals_in->at(i).normal_x,
-                                      normals_in->at(i).normal_y,
-                                      normals_in->at(i).normal_z);
-    }
-  }
-
   return normals_in;
 }
 
 // Source: https://silo.tips/download/least-squares-intersection-of-lines
 template <typename PointT>
-pcl::PointXYZ Superellipsoid<PointT>::estimateClusterCenter(float regularization)
+pcl::PointXYZ Superellipsoid<PointT>::estimateClusterCenter(float regularization, bool flip_normals_towards_estimated_center)
 {
   // TODO: check cloud_in and normals_in have the same size
 
@@ -292,6 +269,21 @@ pcl::PointXYZ Superellipsoid<PointT>::estimateClusterCenter(float regularization
     estimated_center = pcl::PointXYZ(cluster_mean(0,0), cluster_mean(1,0), cluster_mean(2,0));
     fprintf(stderr, "Center prediction with normals failed. Using cluster mean instead...\n");
   }
+
+  if (flip_normals_towards_estimated_center)
+  {
+    for (size_t i = 0; i < normals_in->size(); i++)
+    {
+      pcl::flipNormalTowardsViewpoint(cloud_in->points.at(i),
+                                      estimated_center.x,
+                                      estimated_center.y,
+                                      estimated_center.z,
+                                      normals_in->at(i).normal_x,
+                                      normals_in->at(i).normal_y,
+                                      normals_in->at(i).normal_z);
+    }
+  }
+
   return estimated_center;
 }
 
@@ -306,6 +298,7 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, Cos
   priors_ptr->resize(16);
   auto priors = (*priors_ptr).data();
 
+  // TODO: set start parameters via a function optionally
   parameters[0] = 0.05; // a
   parameters[1] = 0.05; // b
   parameters[2] = 0.05; // c
@@ -326,8 +319,8 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, Cos
   for (size_t i=0; i<cloud_in->size(); i++) {
     auto point_ = cloud_in->at(i).getVector3fMap();
     CostFunction* cost_function = SuperellipsoidError::Create(point_.x(), point_.y(), point_.z(), priors, cost_type, prior_center, prior_scaling);
-    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.2), parameters); // loss todo
-    problem.AddResidualBlock(cost_function, nullptr, parameters); // loss todo
+    //problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.2), parameters); // TODO: regularizer shouldn't be applied to prior residuals! Checking the ceres documentation may help.
+    problem.AddResidualBlock(cost_function, nullptr, parameters); // TODO: add loss
   }
 
   // lower/upper bounds
@@ -339,10 +332,10 @@ bool Superellipsoid<PointT>::fit(bool log_to_stdout, int max_num_iterations, Cos
 
   Solver::Options options;
   options.max_num_iterations = max_num_iterations;
-  options.num_threads = 8; // can be good with SMT on modern CPU's
+  options.num_threads = 4; // can be good with SMT on modern CPU's
   options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
   options.minimizer_progress_to_stdout = log_to_stdout;
-  //options.check_gradients = true; // ???
+  //options.check_gradients = true; // enabling this causing the optimization to be failed. weird.
 
   Solver::Summary summary;
   Solve(options, &problem, &summary);
@@ -363,7 +356,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::estimateMissingSurfa
   pcl::PointCloud<pcl::PointXYZ>::Ptr fibonacci_superellipsoid = sampleSurface(true, true, num_samples);
   pcl::PointCloud<pcl::PointXYZ>::Ptr missing_surfaces = (new pcl::PointCloud<pcl::PointXYZ>)->makeShared();
 
-  // TODO: For stability cloud_in can be projected onto the superellipsoid. No need to do this now...
+  // TODO: For stability cloud_in can be projected onto the superellipsoid.
+  //       May help in situations where points are noisy.
   pcl::search::KdTree<PointT> kdtree;
   kdtree.setInputCloud(cloud_in);
 
@@ -390,6 +384,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::estimateMissingSurfa
 }
 
 
+// See: https://salihmarangoz.github.io/blog/Superellipsoid_Sampling/
 template <typename PointT>
 pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceFibonacciProjection(double a, double b, double c, double e1, double e2, double tx, double ty, double tz, double roll, double pitch, double yaw, int num_samples) const
 {
@@ -411,7 +406,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceFibona
       // Compute distance to superellipsoid surface (approximation) and distance to center
       double f = pow(pow(abs(x),2.0/e2) + pow(abs(y),2.0/e2), e2/e1) + pow(abs(z),2.0/e1); // assuming a=1, b=1, c=1
       double distance_to_center = sqrt(pow(x,2) + pow(y,2) + pow(z,2));
-      double distance_to_superellipsoid = abs(1.0-pow(f, e1/2.0)) * SIGNUM(f-1); // negative if inside, positive if outside
+      double distance_to_superellipsoid = std::copysign(abs(1.0-pow(f, e1/2.0)) , f-1); // negative if inside, positive if outside
 
       // Project using normalizer
       double normalizer = (distance_to_center - distance_to_superellipsoid) / distance_to_center;
@@ -478,7 +473,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::_sampleSurfaceParame
 }
 
 
-// https://en.wikipedia.org/wiki/Superellipsoid
+// See: https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
 pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool use_fibonacci_projection/*=false*/, bool apply_transformation/*=true*/, int num_samples_fibonacci/*=1000*/, double u_res_parametric/*=0.05*/, double v_res_parametric/*0.05*/) const
 {
@@ -515,7 +510,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleSurface(bool u
 }
 
 
-// https://en.wikipedia.org/wiki/Superellipsoid
+// See: https://en.wikipedia.org/wiki/Superellipsoid
 template <typename PointT>
 pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double resolution, bool apply_transformation/*=true*/) const
 {
@@ -578,6 +573,23 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr Superellipsoid<PointT>::sampleVolume(double 
 }
 
 
+// ref: https://en.wikipedia.org/wiki/Superellipsoid
+template <typename PointT>
+double Superellipsoid<PointT>::computeVolume() const
+{
+  double a = (*parameters_ptr)[0];
+  double b = (*parameters_ptr)[1];
+  double c = (*parameters_ptr)[2];
+  double e1 = (*parameters_ptr)[3];
+  double e2 = (*parameters_ptr)[4];
+
+  //double r = 2./e2;
+  //double t = 2./e1;
+  //return (2./3.) * a * b * c * (4./(r*t)) * boost::math::beta(1/r, 1/r) * boost::math::beta(2/t, 1/t);
+  return (2./3.) * a * b * c * e1 * e2 * boost::math::beta(e2/2., e2/2.) * boost::math::beta(e1, e1/2.);
+}
+
+
 template <typename PointT>
 std::map<std::string, double> Superellipsoid<PointT>::getParameters() const
 {
@@ -607,10 +619,11 @@ pcl::PointXYZ Superellipsoid<PointT>::getOptimizedCenter() const
 
 
 template <typename PointT>
-pcl::PointXYZ Superellipsoid<PointT>::getEstimatedCenter()
+pcl::PointXYZ Superellipsoid<PointT>::getEstimatedCenter() const
 {
   return estimated_center;
 }
+
 
 // void::setEstimatedCenter()
 // {
@@ -619,42 +632,21 @@ pcl::PointXYZ Superellipsoid<PointT>::getEstimatedCenter()
 
 
 template <typename PointT>
-typename pcl::PointCloud<PointT>::Ptr Superellipsoid<PointT>::getCloud()
+const typename pcl::PointCloud<PointT>::Ptr Superellipsoid<PointT>::getCloud() const
 {
   return cloud_in;
 }
 
 
 template <typename PointT>
-pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::getNormals()
+const pcl::PointCloud<pcl::Normal>::Ptr Superellipsoid<PointT>::getNormals() const
 {
   return normals_in;
 }
 
 
-// ref: https://en.wikipedia.org/wiki/Superellipsoid
-template <typename PointT>
-double Superellipsoid<PointT>::computeVolume() const
-{
-  double a = (*parameters_ptr)[0];
-  double b = (*parameters_ptr)[1];
-  double c = (*parameters_ptr)[2];
-  double e1 = (*parameters_ptr)[3];
-  double e2 = (*parameters_ptr)[4];
-
-  //double r = 2./e2;
-  //double t = 2./e1;
-  //return (2./3.) * a * b * c * (4./(r*t)) * boost::math::beta(1/r, 1/r) * boost::math::beta(2/t, 1/t);
-  return (2./3.) * a * b * c * e1 * e2 * boost::math::beta(e2/2., e2/2.) * boost::math::beta(e1, e1/2.);
-}
-
-
-// ----------------------------------------------------------------------------------
-
-
-// ----------------------------------------------------------------------------------
 // TODO
-
+/*
 template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> separateCloudByIndices(const typename pcl::PointCloud<PointT>::ConstPtr &input_cloud, const pcl::IndicesConstPtr &indices)
 {
@@ -670,7 +662,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
   extract.filter(*outlier_cloud);
   return std::make_pair(inlier_cloud, outlier_cloud);
 }
-
+*/
 
 } // namespace superellipsoid
 #endif // SUPERELLIPSOID_H
