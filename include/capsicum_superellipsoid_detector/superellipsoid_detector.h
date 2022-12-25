@@ -73,9 +73,8 @@ public:
                     m_centers_prior_pub,
                     m_centers_optimized_pub,
                     m_superellipsoids_surface_pub,
-                    m_superellipsoids_volume_pub,
                     m_surface_normals_marker_pub,
-                    m_xyzlnormal_pub,
+                    m_pc_preprocessed_pub,
                     m_missing_surfaces_pub;
     std::unique_ptr<tf::TransformListener> m_tf_listener;
     ros::ServiceServer m_fit_superellipsoids_service;

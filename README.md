@@ -47,27 +47,14 @@ S. Marangoz, T. Zaenker, R. Menon and M. Bennewitz, **"Fruit Mapping with Shape 
 Dependencies needed for compiling and running the node.
 
 - Ubuntu 20.04 + ROS Noetic
-
-- **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**:
-
-   ```bash
-   $ git clone https://github.com/salihmarangoz/superellipsoid_msgs
-   ```
+- **[superellipsoid_msgs](https://github.com/salihmarangoz/superellipsoid_msgs)**: `git clone https://github.com/salihmarangoz/superellipsoid_msgs`
 
 
-- **[Ceres Solver](http://ceres-solver.org/installation.html)**:
+- **[Ceres Solver](http://ceres-solver.org/installation.html)**: `$ sudo apt install libceres-dev # tested with 1.14.0`
 
-  ```bash
-  $ sudo apt install libceres-dev # version 1.x.x also works
-  ```
-  
-- **[OpenCV](https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html)**:
+- **[OpenCV](https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html)**: `sudo apt install libopencv-dev # tested with 4.2.0`
 
-   ```bash
-   $ sudo apt install libopencv-dev # tested with 4.2.0
-   ```
-
-- Other public ROS dependencies defined in `package.xml`.
+- Other ROS dependencies:
 
   ```bash
   $ cd catkin_ws/
@@ -78,7 +65,7 @@ Dependencies needed for compiling and running the node.
 
 Packages needed for some launch files.
 
-- **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)** (3D mapping)
+- **[voxblox](https://voxblox.readthedocs.io/en/latest/pages/Installation.html)**
 
   ```bash
   $ cd ~/catkin_ws/src
@@ -89,7 +76,6 @@ Packages needed for some launch files.
   ```
 
 - [**ur_with_cam_gazebo**](https://github.com/Eruvae/ur_with_cam_gazebo)
-- TODO: agrobot_mrcnn_ros (deep learning model for detecting sweet peppers in camera images)
 
 ### Compile
 
@@ -117,7 +103,9 @@ Two executables described below are available for ROS. Single or both can be run
 - **`superellipsoid_detector_node`**: For processing a stream of pointclouds.
 - **`superellipsoid_detector_service`**: For processing a single service request (remote procedure call). (No publisher/subscriber is initialized, except TF)
 
-### Common Parameters
+### Parameters
+
+**NOTE: Other parameters can be found in [`cfg/SuperellipsoidDetector.cfg`](cfg/SuperellipsoidDetector.cfg).**
 
 - **`cost_type`** **: 2**
 
@@ -157,72 +145,7 @@ Two executables described below are available for ROS. Single or both can be run
 
   - The prior (beta value in the formula) which is enforcing **a**, **b**, **c** values define the scaling of superellipsoid to be close to each other. Higher values increase the regularization. Different than the volume constraint.
 
-- **`missing_surfaces_num_samples`: 500**
-
-  - The number of points being used to find points belonging to missing surfaces with rejection sampling.
-
-- **`missing_surfaces_threshold`: 0.015**
-
-  - In meters. Points sampled with the projected Fibonacci sphere method are compared to the input data points. If the distance is higher than the threshold, the point will be marked as a missing surface point.
-
-- **`min_cluster_size`: 100**
-  
-  - Discards clusters smaller than this value.
-  
-- **`max_cluster_size`: 10000**
-
-  - Discards clusters larger than this value.
-
-- **`max_num_iterations`: 100**
-
-  - The maximum number of optimization iterations.
-
-- **`cluster_tolerance`: 0.01**
-
-  - In meters. Groups two points with smaller distance than this value into the same cluster.
-
-- **`estimate_normals_search_radius`: 0.015**
-
-  - In meters. Search radius for surface normal estimation.
-
-- **`estimate_cluster_center_regularization`: 2.5**
-
-  - Regularization for the intersection of lines estimation. Defines a bias towards the mean of cluster points. Higher values bring the result towards the bias point. Useful when there are not enough surfaces.
-
-- **`pointcloud_volume_resolution`: 0.001**
-
-  - In meters. Resolution of the pointcloud in **~superellipsoids_volume** message.
-
-- **`octree_volume_resolution`: 0.001**
-
-  - In meters. Resolution of the pointcloud in **~superellipsoids_volume_octomap** message.
-
-- **`print_ceres_summary`: false**
-
-  - Enables printing cost, gradients, extra information, etc. for each optimization step.
-
-- **`use_fibonacci_sphere_projection_sampling`: false**
-
-  - If true, uses our approach for sampling of superellipsoid surfaces which distributes points on the surface uniformly. If false, uses the superellipsoid parametric representation which enables easier perceiving the orientation of the superellipsoids. This only affects the the output of **~superellipsoids_surface** message.
-
-- **`world_frame`: "world"**
-
-  - World transform frame.
-  - TODO: will be used for object tracking
-
-### Node-Only Parameters
-
-TODO: processing_mode
-
-TODO: position_threshold
-
-TODO: orientation_threshold
-
-TODO: estimate_missing_surfaces
-
-### Service-Only Parameters
-
-None.
+**NOTE: Other parameters can be found in [`cfg/SuperellipsoidDetector.cfg`](cfg/SuperellipsoidDetector.cfg).**
 
 ### Subscribed Topics
 
@@ -230,7 +153,9 @@ Note: Available only for the node.
 
 **`~pc_in`** ("sensor_msgs/PointCloud2")
 
-- RGBXYZ pointcloud as the input (e.g. voxblox output can be used as the input). Currently RGB information is not used. Some modifications may be needed to feed XYZ only pointcloud.
+- RGBXYZ pointcloud as the input (e.g. voxblox output can be used as the input). Currently RGB information is not used. 
+  - TODO: Some modifications may be needed to feed XYZ only pointcloud.
+
 
 ### Published Topics
 
@@ -245,16 +170,15 @@ Note: Available only for the node. Also, computation resources will only be used
 - **`~centers_optimized`** ("sensor_msgs/PointCloud2")
   - XYZ pointcloud for centers computed after the superellipsoid optimization. Centers for failed optimizations will not be published. Recommended only for debugging.
 - **`~pc_preprocessed`** ("sensor_msgs/PointCloud2")
-  - TODO
-  - XYZLNormal pointcloud for all clustered points. Labels are indicating cluster indexes. Normals don't represent the surface normal, instead the normals are computed w.r.t. predicted cluster center. 
+  - XYZLNormal pointcloud after applying clustering and surface normal estimation on to the inputs pointcloud.
 - **`~missing_surfaces`** ("sensor_msgs/PointCloud2")
-  - XYZL pointcloud representing (estimated) missing data points on an superellipsoid. Labels are indicating object id.
+  - XYZL pointcloud representing (estimated) missing data points on an superellipsoid. Labels are indicating the object id.
 - **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
-  - Use only for debugging. Arrow markers for visualizing surface normals. Surface normals are computed w.r.t. predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
+  - Use only for debugging. Arrow markers for visualizing surface normals. Surface normals are flipped towards the predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
 
 ### Transforms
 
-- `world` -> Pointcloud Frame
+- `world_frame` -> Pointcloud Frame
 
 ### Services
 
@@ -266,20 +190,23 @@ Note: Available only for the node. Also, computation resources will only be used
 
 ## C++ API
 
-For minimal use, only the template header `superellipsoid.h` with Ceres Solver, Boost, and PCL libraries are needed. A simple example without ROS dependencies would be like this:
+For minimal use, only the template header [`superellipsoid.h`](include/capsicum_superellipsoid_detector/superellipsoid.h) with Ceres Solver, Boost, and PCL libraries is needed. A simple example without any extra dependencies would be like this:
 
 ```c++
 // Load input points
 pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-/////// TODO: Fill in_cloud with points...
+
+// Fill in_cloud with points...
 
 // Filter Invalid Points
 std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
 pcl::removeNaNFromPointCloud(*in_cloud, *in_cloud, *indices);
 
-// Optimization
+// Create a superellipsoid object
 superellipsoid::Superellipsoid<pcl::PointXYZ> se(in_cloud);
-se.estimateNormals(0.015);
+
+// Optimization
+se.estimateNormals(0.015); // Normals are accesible via getNormals()
 se.estimateClusterCenter(2.5);
 if (!se.fit(true, 100, RADIAL_EUCLIDIAN_DISTANCE))
 {
@@ -292,22 +219,16 @@ std::map<std::string, double> optimized_parameters = se.getParameters();
 // Sample superellipsoid surface
 pcl::PointCloud<pcl::PointXYZ>::Ptr surface_cloud = se.sampleSurface();
 
+// Sample superellipsoid volume
+pcl::PointCloud<pcl::PointXYZ>::Ptr volume_cloud = se.sampleVolume(0.01);
+
 // Find missing surfaces
 pcl::PointCloud<pcl::PointXYZ>::Ptr missing_surface_cloud = se.estimateMissingSurfaces(0.015, 500);
 ```
 
+ROS message conversions are defined in [`conversions.h`](include/capsicum_superellipsoid_detector/conversions.h). 
+
 For extra features like clustering, object tracking, etc. check the ROS node/service code as a reference.
-
-
-
-## Future Work
-
-- Accessing to voxblox mesh (vertices and normas) directly would be better. This can take away the need to estimate normals. But this needs some workarounds and code modifications in voxblox.
-- Better clustering / instance segmentation.
-- 3D mapping with Instance segmentation. Mapping with masking pointcloud impacts the quality.
-- Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
-- Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.
-- Loss functions can be used against outliers: http://ceres-solver.org/nnls_modeling.html#lossfunction
 
 
 
@@ -317,7 +238,16 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 
 
 
-## TODO:
+## To-Do
+
+- [ ] Better clustering / instance segmentation.
+- [ ] Accessing to voxblox mesh (vertices and normas) directly would be better. This can take away the need to estimate normals. But this needs some workarounds and code modifications in voxblox.
+- [ ] 3D mapping with Instance segmentation. Mapping with masking pointcloud impacts the quality.
+- [ ] Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
+- [ ] Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.
+- [ ] Loss functions can be used against outliers: http://ceres-solver.org/nnls_modeling.html#lossfunction
+
+- [ ] skip clustering if input pointcloud has labels
 
 - [ ] simplify readme
 - [ ] optional dependencies as much as possible

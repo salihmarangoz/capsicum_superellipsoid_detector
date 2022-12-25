@@ -35,15 +35,14 @@ void SuperellipsoidDetector::startNode()
 
   // ROS Publishers
   m_superellipsoids_pub = m_priv_nh.advertise<superellipsoid_msgs::SuperellipsoidArray>("superellipsoids", 2, true);
-  m_xyzlnormal_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("xyz_label_normal", 2, true);
   m_missing_surfaces_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("missing_surfaces", 2, true);
 
   // ROS Publishers (debugging/visualization purposes)
+  m_pc_preprocessed_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("pc_preprocessed", 2, true);
   m_superellipsoids_surface_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_surface", 2, true);
   m_centers_prior_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_prior", 2, true);
   m_centers_optimized_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("centers_optimized", 2, true);
   m_surface_normals_marker_pub = m_priv_nh.advertise<visualization_msgs::MarkerArray>("surface_normals_marker", 2, true);
-  m_superellipsoids_volume_pub = m_priv_nh.advertise<sensor_msgs::PointCloud2>("superellipsoids_volume", 2, true);
 
   // ROS Subscribers
   m_pc_sub = m_priv_nh.subscribe("pc_in", 1, &SuperellipsoidDetector::subscriberCallback, this); // queue size: 2 for throughput, 1 for low latency
@@ -264,9 +263,9 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
     m_surface_normals_marker_pub.publish(marker_array);
   }
 
-  /*
+  
   // debug: visualize xyz, label, normals, and curvature in a single message
-  if (m_xyzlnormal_pub.getNumSubscribers() > 0)
+  if (m_pc_preprocessed_pub.getNumSubscribers() > 0)
   {
     pcl::PointCloud<pcl::PointXYZLNormal>::Ptr tmp_pc_pcl(new pcl::PointCloud<pcl::PointXYZLNormal>);
 
@@ -296,9 +295,9 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
     sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*tmp_pc_pcl, *tmp_pc_ros);
     tmp_pc_ros->header = new_header;
-    m_xyzlnormal_pub.publish(tmp_pc_ros);
+    m_pc_preprocessed_pub.publish(tmp_pc_ros);
   }
-  */
+  
 
   double elapsed_time = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start).count();
   ROS_INFO("Total Elapsed Time: %f ms", elapsed_time);
@@ -310,7 +309,6 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Generalize PointXYZRGB
 void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
                                           const sensor_msgs::PointCloud2::ConstPtr &pc2,
                                           std_msgs::Header &new_header,
