@@ -20,8 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_sensor_msgs
   visualization_msgs
-  octomap_ros
-  octomap_msgs
+#  octomap_ros
+#  octomap_msgs
   superellipsoid_msgs
   image_transport
   cv_bridge
@@ -31,7 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
-find_package(octomap REQUIRED)
+#find_package(octomap REQUIRED)
 find_package(PCL REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -127,7 +127,7 @@ catkin_package(
    INCLUDE_DIRS include
    LIBRARIES ${PROJECT_NAME}
    CATKIN_DEPENDS ${CATKIN_DEPENDENCIES}
-   DEPENDS OCTOMAP PCL
+   DEPENDS PCL #OCTOMAP
 )
 
 ###########
@@ -140,7 +140,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${CERES_INCLUDE_DIRS}
-  ${OCTOMAP_INCLUDE_DIRS}
+#  ${OCTOMAP_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
 )
 
@@ -174,12 +174,12 @@ add_dependencies(superellipsoid_detector_service ${${PROJECT_NAME}_EXPORTED_TARG
 ## Specify libraries to link a library or executable target against
 target_link_libraries(superellipsoid_detector_node
   ${PROJECT_NAME}
-  ${OCTOMAP_LIBRARIES}
+#  ${OCTOMAP_LIBRARIES}
 )
 
 target_link_libraries(superellipsoid_detector_service
   ${PROJECT_NAME}
-  ${OCTOMAP_LIBRARIES}
+#  ${OCTOMAP_LIBRARIES}
 )
 
 #target_link_libraries(simulate_depth_noise_node

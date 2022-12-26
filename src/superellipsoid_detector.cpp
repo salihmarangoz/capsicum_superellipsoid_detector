@@ -84,6 +84,38 @@ bool SuperellipsoidDetector::serviceCallback(capsicum_superellipsoid_detector::F
 {
   ROS_INFO("Request (for multiple superellipsoids) received...");
 
+  auto t_start = std::chrono::high_resolution_clock::now();
+  ROS_INFO("Pointcloud received...");
+
+  // Config Override
+  capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig config = m_config;
+  config.__fromMessage__(req.config_override);
+  
+  // Process input pointcloud
+  std_msgs::Header new_header;
+  superellipsoid::SuperellipsoidArray<pcl::PointXYZRGB> converged_superellipsoids;
+  if ( !processInput(config, req.in_cloud, new_header, converged_superellipsoids) )
+  {
+    return false;
+  }
+  
+  // Compute missing surfaces
+  if (req.return_missing_surfaces)
+  {
+    for (auto &se : converged_superellipsoids)
+    {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se.estimateMissingSurfaces(m_config.missing_surfaces_threshold, m_config.missing_surfaces_num_samples);
+        sensor_msgs::PointCloud2 tmp_pc_ros;
+        pcl::toROSMsg(*ms_pcl, tmp_pc_ros);
+        tmp_pc_ros.header = new_header;
+        res.missing_surfaces.push_back(tmp_pc_ros);
+    }
+  }
+
+  // TODO: res.outliers;
+
+  double elapsed_time = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start).count();
+  ROS_INFO("Total callback time: %f ms", elapsed_time);
   ROS_WARN("====== Callback finished! =======");
   return true;
 }
@@ -106,72 +138,63 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
 
   auto t_start = std::chrono::high_resolution_clock::now();
   ROS_INFO("Pointcloud received...");
-
-  // Optional Requests
-  std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> missing_surfaces_rosmsgs;
-  if (m_missing_surfaces_pub.getNumSubscribers()>0) missing_surfaces_rosmsgs.reset(new std::vector<sensor_msgs::PointCloud2::Ptr>);
   
   // Process input pointcloud
   std_msgs::Header new_header;
   superellipsoid::SuperellipsoidArray<pcl::PointXYZRGB> converged_superellipsoids;
-  processInput(m_config, input_pc2, new_header, converged_superellipsoids, missing_surfaces_rosmsgs);
+  processInput(m_config, *input_pc2, new_header, converged_superellipsoids); // TODO: get outliers?
 
-  // publish missing surfaces
-  if (missing_surfaces_rosmsgs != nullptr)
-  {
-    //pcl::PointCloud<pcl::PointXYZLNormal>::Ptr missing_pc_pcl(new pcl::PointCloud<pcl::PointXYZLNormal>);
-    pcl::PointCloud<pcl::PointXYZL/*Normal*/>::Ptr missing_pc_pcl(new pcl::PointCloud<pcl::PointXYZL/*Normal*/>);
-
-    int id_counter = 0;
-    for (int j = 0; j < converged_superellipsoids.size(); j++)
-    {
-      auto ms = missing_surfaces_rosmsgs->at(j);
-      auto oc = converged_superellipsoids[j].getOptimizedCenter();
-      missing_pc_pcl->points.reserve(missing_pc_pcl->points.size() + ms->width*ms->height);
-
-      for (sensor_msgs::PointCloud2ConstIterator<float> it(*ms, "x"); it != it.end(); ++it) {
-        //pcl::PointXYZLNormal p;
-        pcl::PointXYZL/*Normal*/ p;
-        p.x = it[0];
-        p.y = it[1];
-        p.z = it[2];
-        p.label = id_counter;
-        /*
-        // Normal vectors should be directed toward optimized centroid. They are not real surface normals!
-        p.normal_x = oc.x - p.x;
-        p.normal_y = oc.y - p.y;
-        p.normal_z = oc.z - p.z;
-        double normal_vec_len = sqrt(pow(p.normal_x,2) + pow(p.normal_y,2) + pow(p.normal_z,2));
-        p.normal_x = p.normal_x / normal_vec_len;
-        p.normal_y = p.normal_y / normal_vec_len;
-        p.normal_z = p.normal_z / normal_vec_len;
-        */
-        missing_pc_pcl->points.push_back(p);
-      }
-
-      id_counter++;
-    }
-
-    sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*missing_pc_pcl, *tmp_pc_ros);
-    tmp_pc_ros->header = new_header;
-    m_missing_surfaces_pub.publish(tmp_pc_ros);
-  }
-
-  // publish converged superellipsoids
+  // Publish converged superellipsoids
   if (m_superellipsoids_pub.getNumSubscribers() > 0)
   {
     superellipsoid_msgs::SuperellipsoidArray sea = superellipsoid_msgs::toROSMsg(converged_superellipsoids, new_header);
     m_superellipsoids_pub.publish(sea);
   }
 
-  // publish prior centroids
-  if (m_centers_prior_pub.getNumSubscribers() > 0)
+  // Publish superellipsoid surface
+  if (m_superellipsoids_surface_pub.getNumSubscribers() > 0)
   {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr prior_centers(new pcl::PointCloud<pcl::PointXYZ>);
+    uint32_t id=0;
+    pcl::PointCloud<pcl::PointXYZL>::Ptr se_surfaces_all(new pcl::PointCloud<pcl::PointXYZL>);
     for (const auto &se : converged_superellipsoids)
     {
-      prior_centers->push_back(se.getEstimatedCenter());
+      pcl::PointCloud<pcl::PointXYZ>::Ptr sur_pcl = se.sampleSurface(m_config.use_fibonacci_sphere_projection_sampling,
+                                                      true, /*apply_transformation*/
+                                                      m_config.num_samples_fibonacci,
+                                                      m_config.u_res_parametric, 
+                                                      m_config.v_res_parametric);
+      (*se_surfaces_all) += labelPointCloud<pcl::PointXYZ, pcl::PointXYZL>(*sur_pcl, id++);
+    }
+    sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*se_surfaces_all, *tmp_pc_ros);
+    tmp_pc_ros->header = new_header;
+    m_superellipsoids_surface_pub.publish(tmp_pc_ros);
+  }
+
+  // Publish missing surfaces
+  if (m_missing_surfaces_pub.getNumSubscribers()>0)
+  {
+    uint32_t id=0;
+    pcl::PointCloud<pcl::PointXYZL>::Ptr missing_surfaces_all(new pcl::PointCloud<pcl::PointXYZL>);
+    for (auto &se : converged_superellipsoids)
+    {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se.estimateMissingSurfaces(m_config.missing_surfaces_threshold, m_config.missing_surfaces_num_samples);
+      (*missing_surfaces_all) += labelPointCloud<pcl::PointXYZ, pcl::PointXYZL>(*ms_pcl, id++);
+    }
+    sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
+    pcl::toROSMsg(*missing_surfaces_all, *tmp_pc_ros);
+    tmp_pc_ros->header = new_header;
+    m_missing_surfaces_pub.publish(tmp_pc_ros);
+  }
+
+  // Publish prior centroids
+  if (m_centers_prior_pub.getNumSubscribers() > 0)
+  {
+    uint32_t id=0;
+    pcl::PointCloud<pcl::PointXYZL>::Ptr prior_centers(new pcl::PointCloud<pcl::PointXYZL>);
+    for (const auto &se : converged_superellipsoids)
+    {
+      prior_centers->push_back( labelPoint<pcl::PointXYZ, pcl::PointXYZL>(se.getEstimatedCenter(), id++) );
     }
     sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*prior_centers, *tmp_pc_ros);
@@ -179,13 +202,14 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
     m_centers_prior_pub.publish(tmp_pc_ros);
   }
 
-  // publish optimized centroids
+  // Publish optimized centroids
   if (m_centers_optimized_pub.getNumSubscribers() > 0)
   {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr optimized_centers(new pcl::PointCloud<pcl::PointXYZ>);
+    uint32_t id=0;
+    pcl::PointCloud<pcl::PointXYZL>::Ptr optimized_centers(new pcl::PointCloud<pcl::PointXYZL>);
     for (const auto &se : converged_superellipsoids)
     {
-      optimized_centers->push_back(se.getOptimizedCenter());
+      optimized_centers->push_back( labelPoint<pcl::PointXYZ, pcl::PointXYZL>(se.getOptimizedCenter(), id++) );
     }
     sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*optimized_centers, *tmp_pc_ros);
@@ -193,25 +217,7 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
     m_centers_optimized_pub.publish(tmp_pc_ros);
   }
 
-  // publish superellipsoid surface
-  if (m_superellipsoids_surface_pub.getNumSubscribers() > 0)
-  {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_pc_pcl(new pcl::PointCloud<pcl::PointXYZ>);
-    for (const auto &se : converged_superellipsoids)
-    {
-      *(tmp_pc_pcl) += *(se.sampleSurface(m_config.use_fibonacci_sphere_projection_sampling,
-                                         true, /*apply_transformation*/
-                                         m_config.num_samples_fibonacci,
-                                         m_config.u_res_parametric, 
-                                         m_config.v_res_parametric));
-    }
-    sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
-    pcl::toROSMsg(*tmp_pc_pcl, *tmp_pc_ros);
-    tmp_pc_ros->header = new_header;
-    m_superellipsoids_surface_pub.publish(tmp_pc_ros);
-  }
-
-  // debug: visualize surface normals via rviz markers
+  // Publish surface normals via rviz markers
   if (m_surface_normals_marker_pub.getNumSubscribers() > 0)
   {
     // DELETE ALL MARKERS
@@ -230,7 +236,7 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
       auto cloud_ = se.getCloud();
       auto normals_ = se.getNormals();
 
-      for (int i=0; i<cloud_->points.size(); i++)
+      for (int i=0; i<cloud_->size(); i++)
       {
         visualization_msgs::Marker marker;
         marker.header = new_header;
@@ -263,35 +269,31 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
     m_surface_normals_marker_pub.publish(marker_array);
   }
 
-  
-  // debug: visualize xyz, label, normals, and curvature in a single message
+  // Publish preprocessed pointcloud with clustering and surface normal information
   if (m_pc_preprocessed_pub.getNumSubscribers() > 0)
   {
     pcl::PointCloud<pcl::PointXYZLNormal>::Ptr tmp_pc_pcl(new pcl::PointCloud<pcl::PointXYZLNormal>);
-
-    int id_counter = 0;
+    int id = 0;
     for (const auto &se : converged_superellipsoids)
     {
       auto cloud_ = se.getCloud();
       auto normals_ = se.getNormals();
-      tmp_pc_pcl->points.reserve(tmp_pc_pcl->points.size() + cloud_->points.size());
-
-      for (int i = 0; i < cloud_->points.size(); i++)
+      tmp_pc_pcl->points.reserve(tmp_pc_pcl->size() + cloud_->size());
+      for (int i = 0; i < cloud_->size(); i++)
       {
         pcl::PointXYZLNormal p;
         p.x = cloud_->points[i].x;
         p.y = cloud_->points[i].y;
         p.z = cloud_->points[i].z;
-        p.label = id_counter;
+        p.label = id;
         p.normal_x = normals_->points[i].normal_x;
         p.normal_y = normals_->points[i].normal_y;
         p.normal_z = normals_->points[i].normal_z;
         p.curvature = normals_->points[i].curvature;
         tmp_pc_pcl->points.push_back(p);
       }
-      id_counter++;
+      id++;
     }
-
     sensor_msgs::PointCloud2::Ptr tmp_pc_ros(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*tmp_pc_pcl, *tmp_pc_ros);
     tmp_pc_ros->header = new_header;
@@ -300,7 +302,7 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
   
 
   double elapsed_time = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - t_start).count();
-  ROS_INFO("Total Elapsed Time: %f ms", elapsed_time);
+  ROS_INFO("Total callback time: %f ms", elapsed_time);
   ROS_WARN("====== Callback finished! =======");
 }
 
@@ -309,16 +311,15 @@ void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Pt
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
-                                          const sensor_msgs::PointCloud2::ConstPtr &pc2,
+bool SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::SuperellipsoidDetectorConfig &config,
+                                          const sensor_msgs::PointCloud2 &pc2,
                                           std_msgs::Header &new_header,
-                                          std::vector<superellipsoid::Superellipsoid<pcl::PointXYZRGB>> &converged_superellipsoids,
-                                          std::shared_ptr<std::vector<sensor_msgs::PointCloud2::Ptr>> &missing_surfaces
+                                          std::vector<superellipsoid::Superellipsoid<pcl::PointXYZRGB>> &converged_superellipsoids
                                           )
 {
   // Convert to PCL Pointcloud
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_pcl (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::fromROSMsg(*pc2, *pc_pcl);
+  pcl::fromROSMsg(pc2, *pc_pcl);
 
   // Filter Invalid Points
   std::shared_ptr<std::vector<int>> indices(new std::vector<int>);
@@ -327,7 +328,7 @@ void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::Supe
   if (pc_pcl->size() < config.min_cluster_size)
   {
     ROS_WARN("Number of points (%lu) is smaller than min_cluster_size (%d). Aborting...", pc_pcl->size(), config.min_cluster_size);
-    return;
+    return false;
   }
 
   // Transform pointcloud to the world frame
@@ -363,18 +364,15 @@ void SuperellipsoidDetector::processInput(capsicum_superellipsoid_detector::Supe
   {
     ROS_WARN("Optimization failed with %d of %lu clusters.", fail_counter, fail_counter+converged_superellipsoids.size());
   }
-
-  if (missing_surfaces != nullptr)
+  if (converged_superellipsoids.size() <= 0)
   {
-    for (auto &se : converged_superellipsoids)
-    {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se.estimateMissingSurfaces(config.missing_surfaces_threshold, config.missing_surfaces_num_samples);
-      sensor_msgs::PointCloud2::Ptr ms_ros(new sensor_msgs::PointCloud2);
-      pcl::toROSMsg(*ms_pcl, *ms_ros);
-      ms_ros->header = new_header;
-      missing_surfaces->push_back(ms_ros);
-    }
+    return false;
   }
+  return true;
 }
 
 } // namespace superellipsoid
+
+
+
+

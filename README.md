@@ -164,17 +164,17 @@ Note: Available only for the node. Also, computation resources will only be used
 - **`~superellipsoids`** ("superellipsoid_msgs/SuperellipsoidArray")
   - Optimized superellipsoids output. Headers are the same for all superellipsoids.
 - **`~superellipsoids_surface`** ("sensor_msgs/PointCloud2")
-  - XYZ pointcloud for the surface of superellipsoids.
+  - XYZL pointcloud for the surface of superellipsoids.
 - **`~centers_prior`** ("sensor_msgs/PointCloud2")
-  - XYZ pointcloud for predicted centers via only using surface normals. Recommended only for debugging.
+  - XYZL pointcloud for predicted centers via only using surface normals. Recommended only for debugging.
 - **`~centers_optimized`** ("sensor_msgs/PointCloud2")
-  - XYZ pointcloud for centers computed after the superellipsoid optimization. Centers for failed optimizations will not be published. Recommended only for debugging.
+  - XYZL pointcloud for centers computed after the superellipsoid optimization. Centers for failed optimizations will not be published. Recommended only for debugging.
 - **`~pc_preprocessed`** ("sensor_msgs/PointCloud2")
   - XYZLNormal pointcloud after applying clustering and surface normal estimation on to the inputs pointcloud.
 - **`~missing_surfaces`** ("sensor_msgs/PointCloud2")
-  - XYZL pointcloud representing (estimated) missing data points on an superellipsoid. Labels are indicating the object id.
+  - XYZL pointcloud representing (estimated) missing data points on an superellipsoid.
 - **`~surface_normals_marker`** ("visualization_msgs::MarkerArray")
-  - Use only for debugging. Arrow markers for visualizing surface normals. Surface normals are flipped towards the predicted cluster center. Only recommended for debugging. Use `~xyz_label_normal` for further processing.
+  - Use only for debugging/visualization. Arrow markers for visualizing surface normals. Surface normals are flipped towards the predicted cluster center.
 
 ### Transforms
 
@@ -246,13 +246,8 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 - [ ] Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
 - [ ] Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.
 - [ ] Loss functions can be used against outliers: http://ceres-solver.org/nnls_modeling.html#lossfunction
-
 - [ ] skip clustering if input pointcloud has labels
-
 - [ ] simplify readme
-- [ ] optional dependencies as much as possible
 - [ ] fix ros service, maybe add ros messages
 - [ ] update the comments in superellipsoid msgs
-- [ ] decrease the number of published topics if possible
 - [ ] use tf2 instead of tf
-- [ ] sort parameters

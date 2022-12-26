@@ -94,7 +94,7 @@ Visualization Manager:
         Min Value: -10
         Value: true
       Axis: Z
-      Channel Name: curvature
+      Channel Name: label
       Class: rviz/PointCloud2
       Color: 255; 255; 255
       Color Transformer: Intensity
@@ -122,7 +122,7 @@ Visualization Manager:
         Min Value: -10
         Value: true
       Axis: Z
-      Channel Name: z
+      Channel Name: label
       Class: rviz/PointCloud2
       Color: 255; 255; 255
       Color Transformer: Intensity
@@ -150,10 +150,10 @@ Visualization Manager:
         Min Value: 0.2535081207752228
         Value: true
       Axis: Z
-      Channel Name: x
+      Channel Name: label
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: FlatColor
+      Color Transformer: Intensity
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -164,8 +164,8 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.004999999888241291
-      Style: Spheres
+      Size (m): 0.003000000026077032
+      Style: Boxes
       Topic: /superellipsoid_detector_node/missing_surfaces
       Unreliable: false
       Use Fixed Frame: true
@@ -178,7 +178,7 @@ Visualization Manager:
         Min Value: -10
         Value: true
       Axis: Z
-      Channel Name: intensity
+      Channel Name: label
       Class: rviz/PointCloud2
       Color: 186; 189; 182
       Color Transformer: FlatColor
@@ -263,7 +263,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 0.808878481388092
+      Distance: 0.7762222290039062
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -271,17 +271,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.13479293882846832
-        Y: 0.6042488217353821
-        Z: 0.4499456286430359
+        X: -0.10472177714109421
+        Y: 0.5850135087966919
+        Z: 0.35312166810035706
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.274797648191452
+      Pitch: 0.19479814171791077
       Target Frame: <Fixed Frame>
-      Yaw: 1.4089024066925049
+      Yaw: 1.7977215051651
     Saved: ~
 Window Geometry:
   Displays:
