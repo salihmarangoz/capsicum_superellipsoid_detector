@@ -1,7 +1,10 @@
 #ifndef __SUPERELLIPSOID_DETECTOR_H__
 #define __SUPERELLIPSOID_DETECTOR_H__
 
+#include <chrono>
+
 #include <ros/ros.h>
+#include <tf/transform_listener.h>
 
 // reconfigure
 #include <dynamic_reconfigure/server.h>
@@ -14,27 +17,21 @@
 // topics
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointCloud.h>
-
-// TODO ===========================================================
-#include <chrono>
-#include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/Point.h>
+
+// PCL
+#include <pcl/point_cloud.h>
 #include <pcl/filters/conditional_removal.h>
-#include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <tf/transform_listener.h>
+#include <pcl_ros/transforms.h>
+
+// superellipsoid_msgs
 #include <superellipsoid_msgs/Superellipsoid.h>
 #include <superellipsoid_msgs/SuperellipsoidArray.h>
-#include <octomap/AbstractOcTree.h>
-#include <octomap_msgs/Octomap.h>
-#include <octomap_ros/conversions.h>
-#include <octomap_msgs/conversions.h>
-#include <octomap/OcTree.h>
-#include <pcl/point_cloud.h>
-// TODO ===========================================================
 
+// capsicum_superellipsoid_detector
 #include "capsicum_superellipsoid_detector/superellipsoid.h"
 #include "capsicum_superellipsoid_detector/clustering.h"
 #include "capsicum_superellipsoid_detector/conversions.h"

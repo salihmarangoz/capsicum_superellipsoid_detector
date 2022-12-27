@@ -7,9 +7,6 @@
 
 namespace superellipsoid_msgs
 {
-//////////////////////////////////////////////////////////////////
-//////// SUPERELLIPSOID CAPSULATED TYPES /////////////////////////
-//////////////////////////////////////////////////////////////////
 
 // Superellipsoid -> encapsulated by a pointer
 using SuperellipsoidPtr = boost::shared_ptr<Superellipsoid>;
@@ -33,6 +30,7 @@ superellipsoid::Superellipsoid<PointT> fromROSMsg(const superellipsoid_msgs::Sup
   (*(se.parameters_ptr))[8] = se_msg.roll;
   (*(se.parameters_ptr))[9] = se_msg.pitch;
   (*(se.parameters_ptr))[10] = se_msg.yaw;
+  se.id = se_msg.id;
   return se;
 }
 
@@ -67,6 +65,8 @@ superellipsoid_msgs::Superellipsoid toROSMsg(const superellipsoid::Superellipsoi
   se_msg.yaw = (*(se.parameters_ptr))[10];
   se_msg.volume = se.computeVolume();
   se_msg.header = header;
+  se_msg.id = id;
+  se_msg.id = se.id;
   return se_msg;
 }
 
@@ -78,7 +78,7 @@ superellipsoid_msgs::SuperellipsoidArray toROSMsg(const superellipsoid::Superell
   se_msg_arr.superellipsoids.reserve(se.size());
   for (int i=0; i<se.size(); i++)
   {
-    superellipsoid_msgs::Superellipsoid se_msg = toROSMsg(se[i], header);
+    superellipsoid_msgs::Superellipsoid se_msg = toROSMsg(se[i], header, id);
     se_msg_arr.superellipsoids.push_back(se_msg);
   }
 

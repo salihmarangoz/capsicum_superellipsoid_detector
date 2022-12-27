@@ -98,13 +98,20 @@ bool SuperellipsoidDetector::serviceCallback(capsicum_superellipsoid_detector::F
   {
     return false;
   }
+
+  // Convert to superellipsoid msg
+  res.results.reserve(converged_superellipsoids.size());
+  for (int i=0; i<converged_superellipsoids.size(); i++)
+  {
+    res.results.push_back( superellipsoid_msgs::toROSMsg(converged_superellipsoids[i], new_header) );
+  }
   
   // Compute missing surfaces
   if (req.return_missing_surfaces)
   {
     for (auto &se : converged_superellipsoids)
     {
-      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se.estimateMissingSurfaces(m_config.missing_surfaces_threshold, m_config.missing_surfaces_num_samples);
+      pcl::PointCloud<pcl::PointXYZ>::Ptr ms_pcl = se.estimateMissingSurfaces(config.missing_surfaces_threshold, config.missing_surfaces_num_samples);
         sensor_msgs::PointCloud2 tmp_pc_ros;
         pcl::toROSMsg(*ms_pcl, tmp_pc_ros);
         tmp_pc_ros.header = new_header;
@@ -129,7 +136,15 @@ bool SuperellipsoidDetector::serviceCallback(capsicum_superellipsoid_detector::F
 void SuperellipsoidDetector::subscriberCallback(const sensor_msgs::PointCloud2Ptr &input_pc2)
 {
   // Check processing mode
-  if (m_config.processing_mode != 0 /* NOT CONTINUOUS */ && !m_is_triggered) 
+  if (m_config.processing_mode < 0) // negative values are for paused/disabled processing modes
+  {
+    return;
+  }
+  else if (m_config.processing_mode == 0 /* CONTINUOUS */ && (m_config.position_threshold > 0 || m_config.orientation_threshold > 0))
+  {
+    // TODO
+  }
+  else if (m_config.processing_mode != 0 /* NOT CONTINUOUS */ && !m_is_triggered) 
   {
     ROS_DEBUG("Skipped a message!");
     return;
