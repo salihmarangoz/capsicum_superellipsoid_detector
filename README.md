@@ -241,8 +241,6 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 ## To-Do
 
 - [ ] Better clustering / instance segmentation.
-- [ ] Accessing to voxblox mesh (vertices and normas) directly would be better. This can take away the need to estimate normals. But this needs some workarounds and code modifications in voxblox.
-- [ ] 3D mapping with Instance segmentation. Mapping with masking pointcloud impacts the quality.
 - [ ] Use of surface normals instead of a single estimated center in the optimization process. This may work better for non-sphere like capsicums.
 - [ ] Sometimes capsicums may have weird shapes (not like a sphere nor superellipsoid, not symmetrical, etc.). Combination of multiple superellipsoids for modeling the fruit surface would be better. On the other hand, estimating the missing parts of the shape becomes difficult this way.
 - [ ] Loss functions can be used against outliers: http://ceres-solver.org/nnls_modeling.html#lossfunction
@@ -251,3 +249,4 @@ This project is completed under a HiWi job at [Uni-Bonn Humanoid Robotics Lab](h
 - [ ] fix ros service, maybe add ros messages
 - [ ] update the comments in superellipsoid msgs
 - [ ] use tf2 instead of tf
+- [ ] input pointcloud must have homogeneous density for as much as possible. maybe use  voxelgrid filter limiting density in some regions.

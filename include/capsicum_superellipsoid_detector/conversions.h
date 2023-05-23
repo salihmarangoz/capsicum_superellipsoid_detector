@@ -65,7 +65,6 @@ superellipsoid_msgs::Superellipsoid toROSMsg(const superellipsoid::Superellipsoi
   se_msg.yaw = (*(se.parameters_ptr))[10];
   se_msg.volume = se.computeVolume();
   se_msg.header = header;
-  se_msg.id = id;
   se_msg.id = se.id;
   return se_msg;
 }
@@ -78,7 +77,7 @@ superellipsoid_msgs::SuperellipsoidArray toROSMsg(const superellipsoid::Superell
   se_msg_arr.superellipsoids.reserve(se.size());
   for (int i=0; i<se.size(); i++)
   {
-    superellipsoid_msgs::Superellipsoid se_msg = toROSMsg(se[i], header, id);
+    superellipsoid_msgs::Superellipsoid se_msg = toROSMsg(se[i], header);
     se_msg_arr.superellipsoids.push_back(se_msg);
   }
 

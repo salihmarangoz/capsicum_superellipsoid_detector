@@ -138,7 +138,7 @@ class Superellipsoid
 {
 public:
   // TODO: set const better!
-  // TODO: constructor without cloud_in
+  // TODO: constructor without cloud_in? setCloud method?
   Superellipsoid(typename pcl::PointCloud<PointT>::Ptr cloud_in);
   pcl::PointCloud<pcl::Normal>::Ptr estimateNormals(float search_radius);
   pcl::PointXYZ estimateClusterCenter(float regularization, bool flip_normals_towards_estimated_center=true);
@@ -162,6 +162,7 @@ public:
   pcl::PointCloud<pcl::Normal>::Ptr normals_in;
   pcl::PointXYZ estimated_center;
   std::shared_ptr<std::vector<double>> parameters_ptr;
+  uint32_t id; // TODO
 };
 
 template <typename PointT>
